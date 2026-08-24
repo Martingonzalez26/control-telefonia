@@ -353,6 +353,7 @@
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('totalCalls')">Llamadas ⇕</th>
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('score')">Score GW ⇕</th>
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('answerPct')">Answer % ⇕</th>
+                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('noAnswerPct')">No Answer % ⇕</th>
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('rejectedPct')">Rejected % ⇕</th>
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('busyPct')">Busy % ⇕</th>
                                 <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('congestionPct')">Congestion % ⇕</th>
@@ -531,6 +532,10 @@
                         <input type="number" id="cfgCongestionMax" value="5.0" step="0.5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
                     </div>
                     <div>
+                        <label class="block text-slate-500 mb-1">Min No Answer Esperado (%):</label>
+                        <input type="number" id="cfgNoAnswerMin" value="25.0" step="1.0" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
+                    </div>
+                    <div>
                         <label class="block text-slate-500 mb-1">Umbral Score Crítico:</label>
                         <input type="number" id="cfgScoreCritical" value="60" step="5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
                     </div>
@@ -542,7 +547,7 @@
 
     <!-- Footer -->
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Aplicación Web de Control de Telefonía v2.0 • Procesamiento Local (Sin Servidor) • Paleta Corporativa</p>
+        <p>Aplicación Web de Control de Telefonía v2.1 • Regla Busy & No Answer Corregida</p>
     </footer>
 
     <script>
@@ -561,7 +566,8 @@
             rejectedMax: 3.0,
             busyMax: 5.0,
             congestionMax: 5.0,
-            scoreCritical: 60
+            scoreCritical: 60,
+            noAnswerMin: 25.0
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -830,6 +836,7 @@
             config.rejectedMax = parseFloat(document.getElementById('cfgRejectedMax').value) || 3.0;
             config.busyMax = parseFloat(document.getElementById('cfgBusyMax').value) || 5.0;
             config.congestionMax = parseFloat(document.getElementById('cfgCongestionMax').value) || 5.0;
+            config.noAnswerMin = parseFloat(document.getElementById('cfgNoAnswerMin').value) || 25.0;
             config.scoreCritical = parseFloat(document.getElementById('cfgScoreCritical').value) || 60;
 
             const stats = computeStats(filteredData);
@@ -877,27 +884,35 @@
 
             let score = 100;
 
+            // 1. Rejected Penalties (Heavy - Max penalty 50)
             if (stats.pct.REJECTED > config.rejectedMax) {
                 let diff = stats.pct.REJECTED - config.rejectedMax;
-                score -= Math.min(40, diff * 8);
+                score -= Math.min(50, diff * 10 + 15);
             } else if (stats.pct.REJECTED > 0) {
                 score -= stats.pct.REJECTED * 2;
             }
 
+            // 2. Unallocated Penalties (Severe - Max penalty 40)
             if (stats.pct.UNALLOCATED > 0) {
-                score -= Math.min(30, stats.pct.UNALLOCATED * 15 + 10);
+                score -= Math.min(40, stats.pct.UNALLOCATED * 20 + 15);
             }
 
+            // 3. Busy Penalties (Stronger Penalty: -2.5 pts per % above max)
             if (stats.pct.BUSY > config.busyMax) {
-                score -= Math.min(20, (stats.pct.BUSY - config.busyMax) * 3);
+                let diffBusy = stats.pct.BUSY - config.busyMax;
+                score -= Math.min(40, diffBusy * 2.5 + 5);
             }
 
+            // 4. Congestion Penalties (-3 pts per % above max)
             if (stats.pct.CONGESTION > config.congestionMax) {
-                score -= Math.min(25, (stats.pct.CONGESTION - config.congestionMax) * 4);
+                let diffCong = stats.pct.CONGESTION - config.congestionMax;
+                score -= Math.min(40, diffCong * 3 + 10);
             }
 
-            if (stats.pct.ANSWER < 5 && stats.total > 50) {
-                score -= 15;
+            // 5. No Answer Minimum Threshold Check (Expected Min: 25%)
+            if (stats.pct.NOANSWER < config.noAnswerMin) {
+                let diffNoAns = config.noAnswerMin - stats.pct.NOANSWER;
+                score -= Math.min(30, diffNoAns * 1.5);
             }
 
             score = Math.max(0, Math.min(100, Math.round(score)));
@@ -1074,6 +1089,7 @@
                     score: sc.score,
                     scoreState: sc.state,
                     answerPct: st.pct.ANSWER,
+                    noAnswerPct: st.pct.NOANSWER,
                     rejectedPct: st.pct.REJECTED,
                     busyPct: st.pct.BUSY,
                     congestionPct: st.pct.CONGESTION,
@@ -1101,6 +1117,7 @@
                         <td class="p-2.5 text-right font-medium">${r.totalCalls.toLocaleString()}</td>
                         <td class="p-2.5 text-right font-black ${r.score < 60 ? 'text-rose-600' : 'text-[#6B7C98]'}">${r.score}</td>
                         <td class="p-2.5 text-right font-semibold text-emerald-600">${r.answerPct.toFixed(1)}%</td>
+                        <td class="p-2.5 text-right ${r.noAnswerPct < config.noAnswerMin ? 'text-amber-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.noAnswerPct.toFixed(1)}%</td>
                         <td class="p-2.5 text-right font-bold ${r.rejectedPct > config.rejectedMax ? 'text-rose-600' : 'text-slate-600 dark:text-slate-300'}">${r.rejectedPct.toFixed(1)}%</td>
                         <td class="p-2.5 text-right ${r.busyPct > config.busyMax ? 'text-amber-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.busyPct.toFixed(1)}%</td>
                         <td class="p-2.5 text-right ${r.congestionPct > config.congestionMax ? 'text-orange-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.congestionPct.toFixed(1)}%</td>
@@ -1132,7 +1149,7 @@
                 });
                 recsList.push({
                     type: 'action',
-                    text: `<b>Revisar GWs y Troncales:</b> Se recomienda auditar la tabla de Dispositivos/GWs por fallos en señalización SIP o tramas E1.`
+                    text: `<b>Revisar GWs y Troncales:</b> Auditar tabla de GWs por fallos en señalización SIP o tramas E1.`
                 });
             }
 
@@ -1143,21 +1160,21 @@
                 });
                 recsList.push({
                     type: 'action',
-                    text: `<b>Depurar Base:</b> Depurar números inválidos e inexistentes cargados en las campañas.`
+                    text: `<b>Depurar Base:</b> Depurar números invalidados en campañas.`
                 });
             }
 
             if (stats.pct.BUSY > config.busyMax) {
                 alertsList.push({
                     type: 'warning',
-                    text: `<b>ATENCIÓN BUSY:</b> Ubicado en <b>${stats.pct.BUSY.toFixed(1)}%</b>.`
+                    text: `<b>ATENCIÓN BUSY:</b> Ubicado en <b>${stats.pct.BUSY.toFixed(1)}%</b>, superando la tolerancia del ${config.busyMax}%.`
                 });
             }
 
-            if (stats.pct.CONGESTION > config.congestionMax) {
+            if (stats.pct.NOANSWER < config.noAnswerMin) {
                 alertsList.push({
-                    type: 'danger',
-                    text: `<b>ALERTA CONGESTION:</b> Alcanzó <b>${stats.pct.CONGESTION.toFixed(1)}%</b>.`
+                    type: 'warning',
+                    text: `<b>NO ANSWER ANORMALMENTE BAJO:</b> Se ubicó en <b>${stats.pct.NOANSWER.toFixed(1)}%</b> (Mínimo esperado: ${config.noAnswerMin}%). Posible desvío o rechazo previo.`
                 });
             }
 
