@@ -39,15 +39,8 @@
             --color-brand-sand: #AB978C;
         }
 
-        body.light {
-            background-color: #f4f3f4;
-            color: #333333;
-        }
-
-        body.dark {
-            background-color: #1a1a1a;
-            color: #E9E6E7;
-        }
+        body.light { background-color: #f4f3f4; color: #333333; }
+        body.dark { background-color: #1a1a1a; color: #E9E6E7; }
 
         .custom-card {
             background-color: #ffffff;
@@ -63,50 +56,31 @@
             color: #E9E6E7;
         }
 
-        .header-bg {
-            background-color: #5E5653;
-            color: #E9E6E7;
-        }
+        .header-bg { background-color: #5E5653; color: #E9E6E7; }
+        body.dark .header-bg { background-color: #121212; border-b: 1px solid #5E5653; }
 
-        body.dark .header-bg {
-            background-color: #121212;
-            border-b: 1px solid #5E5653;
-        }
+        .btn-brand-blue { background-color: #6B7C98; color: #ffffff; }
+        .btn-brand-blue:hover { background-color: #5a6a84; }
 
-        .btn-brand-blue {
-            background-color: #6B7C98;
-            color: #ffffff;
-        }
-        .btn-brand-blue:hover {
-            background-color: #5a6a84;
-        }
-
-        .btn-brand-sand {
-            background-color: #AB978C;
-            color: #ffffff;
-        }
-        .btn-brand-sand:hover {
-            background-color: #988479;
-        }
+        .btn-brand-sand { background-color: #AB978C; color: #ffffff; }
+        .btn-brand-sand:hover { background-color: #988479; }
 
         .heatmap-cell { transition: all 0.2s ease; cursor: pointer; }
         .heatmap-cell:hover { transform: scale(1.05); z-index: 10; }
 
-        #loadingOverlay {
-            backdrop-filter: blur(4px);
-        }
+        #loadingOverlay { backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="light font-sans min-h-screen flex flex-col transition-colors duration-300">
 
     <!-- Loading Spinner Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col items-center justify-center text-white">
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 z-50 flex flex-col items-center justify-center text-white">
         <div class="relative flex items-center justify-center">
             <div class="w-16 h-16 border-4 border-slate-300 border-t-[#6B7C98] rounded-full animate-spin"></div>
-            <i data-lucide="phone-call" class="w-6 h-6 text-[#AB978C] absolute"></i>
+            <i data-lucide="folder-search" class="w-6 h-6 text-[#AB978C] absolute"></i>
         </div>
-        <h3 class="text-lg font-bold mt-4 tracking-wide">Procesando Telefonía...</h3>
-        <p class="text-xs text-slate-300 mt-1">Normalizando categorías, detectando GWs y actualizando métricas.</p>
+        <h3 class="text-lg font-bold mt-4 tracking-wide" id="loadingTitle">Escaneando carpeta 'datos'...</h3>
+        <p class="text-xs text-slate-300 mt-1" id="loadingSub">Cargando y unificando reportes pesados automáticamente.</p>
     </div>
 
     <!-- Header -->
@@ -114,15 +88,20 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
                 <div class="p-2 rounded-lg text-white" style="background-color: #6B7C98;">
-                    <i data-lucide="phone-call" class="w-6 h-6"></i>
+                    <i data-lucide="folder-kanban" class="w-6 h-6"></i>
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight text-white">Control de Telefonía & Gateways</h1>
-                    <p class="text-xs text-slate-300">Monitoreo evolutivo, salud de GW y performance de discador</p>
+                    <p class="text-xs text-slate-300">Consolidado automático desde la carpeta 'datos'</p>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
+                <button onclick="loadFolderData()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-3.5 rounded-lg transition flex items-center space-x-2 shadow-sm" title="Revisar si hay archivos nuevos en la carpeta">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Recargar Carpeta</span>
+                </button>
+
                 <button onclick="toggleDarkMode()" id="darkModeBtn" class="p-2 rounded-lg border border-[#7B7F8A] bg-[#5E5653] hover:bg-[#7B7F8A] text-white transition flex items-center space-x-1 text-xs font-semibold" title="Cambiar Modo Claro/Oscuro">
                     <i data-lucide="moon" id="darkModeIcon" class="w-4 h-4"></i>
                     <span id="darkModeText">Oscuro</span>
@@ -130,14 +109,9 @@
 
                 <label class="btn-brand-blue text-xs font-semibold py-2 px-3.5 rounded-lg cursor-pointer transition flex items-center space-x-2 shadow-sm">
                     <i data-lucide="upload" class="w-4 h-4"></i>
-                    <span>Cargar Excel</span>
+                    <span>Cargar Manual</span>
                     <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
                 </label>
-
-                <button onclick="exportDashboardPDF()" class="bg-[#7B7F8A] hover:bg-[#5E5653] text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center space-x-1">
-                    <i data-lucide="file-down" class="w-4 h-4"></i>
-                    <span>PDF</span>
-                </button>
             </div>
         </div>
     </header>
@@ -145,29 +119,30 @@
     <!-- Main Content Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
-        <!-- Initial Upload Prompt -->
-        <div id="uploadPrompt" class="custom-card p-12 text-center my-8 flex flex-col items-center justify-center border-dashed border-2 border-[#7B7F8A]">
-            <div class="w-16 h-16 bg-[#E9E6E7] text-[#5E5653] rounded-full flex items-center justify-center mb-4">
-                <i data-lucide="file-spreadsheet" class="w-8 h-8"></i>
+        <div id="folderStatusBanner" class="custom-card p-3 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-200">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="files" class="w-4 h-4 text-indigo-600"></i>
+                <span><b>Archivos unificados en vivo:</b> <span id="filesLoadedCount">0</span> reportes procesados desde <code>/datos</code></span>
             </div>
-            <h2 class="text-2xl font-bold mb-2">Carga tu reporte diario o histórico de llamadas (.xlsx / .xls)</h2>
-            <p class="text-slate-500 dark:text-slate-400 max-w-md mb-6 text-sm">
-                Procesamiento instantáneo de campañas, dispositivos/Gateways (GW), horas, días y tendencias por rango de fechas.
-            </p>
-            <label class="btn-brand-blue font-semibold py-2.5 px-6 rounded-lg cursor-pointer transition flex items-center justify-center space-x-2 shadow">
-                <i data-lucide="upload" class="w-5 h-5"></i>
-                <span>Seleccionar Archivo Excel</span>
-                <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
-            </label>
+            <span id="lastSyncTime" class="text-slate-400">Sincronizado recientemente</span>
         </div>
 
         <!-- Dashboard Content -->
-        <div id="dashboardContent" class="hidden space-y-6">
+        <div id="dashboardContent" class="space-y-6">
 
             <!-- Filters Bar -->
             <div class="custom-card p-4 flex flex-wrap gap-4 items-center justify-between">
                 <div class="flex flex-wrap gap-3 items-center text-xs flex-1">
                     
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-slate-500 mb-1">Modo de Vista</label>
+                        <select id="filterViewMode" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-bold text-indigo-600 dark:text-indigo-400" onchange="toggleViewMode()">
+                            <option value="ALL">Vista General + Campañas</option>
+                            <option value="GENERAL">Solo Vista General (Global)</option>
+                            <option value="CAMPAIGNS">Solo Desglose por Campaña</option>
+                        </select>
+                    </div>
+
                     <div class="flex flex-col">
                         <label class="font-semibold text-slate-500 mb-1">Vista Temporal</label>
                         <select id="filterTimeAggregation" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-bold text-[#6B7C98]" onchange="applyFilters()">
@@ -547,7 +522,7 @@
 
     <!-- Footer -->
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Aplicación Web de Control de Telefonía v2.1 • Regla Busy & No Answer Corregida</p>
+        <p>Aplicación Web de Control de Telefonía v4.0 • Lectura Automática de Repositorio GitHub</p>
     </footer>
 
     <script>
@@ -570,9 +545,66 @@
             noAnswerMin: 25.0
         };
 
+        const REPO_OWNER = "Martingonzalez26";
+        const REPO_NAME = "control-telefonia";
+        const FOLDER_PATH = "datos";
+
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
+            loadFolderData();
         });
+
+        async function loadFolderData() {
+            showLoading("Escaneando carpeta 'datos'...", "Buscando reportes Excel/CSV en GitHub...");
+            rawData = [];
+
+            try {
+                let apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_PATH}`;
+                let res = await fetch(apiUrl);
+                
+                if (!res.ok) {
+                    throw new Error("No se pudo acceder a la carpeta datos.");
+                }
+
+                let items = await res.json();
+                let validFiles = items.filter(i => i.type === 'file' && (i.name.endsWith('.xlsx') || i.name.endsWith('.xls') || i.name.endsWith('.csv')));
+
+                if (validFiles.length === 0) {
+                    hideLoading();
+                    document.getElementById('filesLoadedCount').textContent = "0";
+                    return;
+                }
+
+                document.getElementById('filesLoadedCount').textContent = validFiles.length;
+                let loadedCount = 0;
+
+                for (let fileObj of validFiles) {
+                    showLoading(`Procesando (${loadedCount + 1}/${validFiles.length})...`, fileObj.name);
+                    let downloadUrl = fileObj.download_url;
+                    
+                    let fileRes = await fetch(downloadUrl);
+                    let arrayBuffer = await fileRes.arrayBuffer();
+
+                    let workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+                    parseRowsIntoRawData(rows);
+                    loadedCount++;
+                }
+
+                populateFilterOptions();
+                applyFilters();
+
+                let now = new Date();
+                document.getElementById('lastSyncTime').textContent = `Actualizado: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
+            } catch (err) {
+                console.warn("No se pudo cargar la carpeta automáticamente: ", err);
+            } finally {
+                hideLoading();
+            }
+        }
 
         function toggleDarkMode() {
             const body = document.body;
@@ -601,7 +633,26 @@
             }
         }
 
-        function showLoading() {
+        function toggleViewMode() {
+            const mode = document.getElementById('filterViewMode').value;
+            const gwSection = document.getElementById('gwTableBody').closest('.custom-card');
+            const campaignSection = document.getElementById('campaignTableBody').closest('.custom-card');
+
+            if (mode === 'GENERAL') {
+                if (gwSection) gwSection.classList.remove('hidden');
+                if (campaignSection) campaignSection.classList.add('hidden');
+            } else if (mode === 'CAMPAIGNS') {
+                if (gwSection) gwSection.classList.add('hidden');
+                if (campaignSection) campaignSection.classList.remove('hidden');
+            } else {
+                if (gwSection) gwSection.classList.remove('hidden');
+                if (campaignSection) campaignSection.classList.remove('hidden');
+            }
+        }
+
+        function showLoading(title, sub) {
+            if (title) document.getElementById('loadingTitle').textContent = title;
+            if (sub) document.getElementById('loadingSub').textContent = sub;
             document.getElementById('loadingOverlay').classList.remove('hidden');
         }
 
@@ -638,7 +689,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            showLoading();
+            showLoading("Procesando Archivo Local...", file.name);
 
             setTimeout(() => {
                 const reader = new FileReader();
@@ -656,10 +707,12 @@
                             return;
                         }
 
-                        processRawExcelData(jsonData);
+                        rawData = [];
+                        parseRowsIntoRawData(jsonData);
+                        populateFilterOptions();
+                        applyFilters();
                     } catch (err) {
                         alert("Error al procesar el archivo Excel: " + err.message);
-                        console.error(err);
                     } finally {
                         hideLoading();
                     }
@@ -668,7 +721,8 @@
             }, 50);
         }
 
-        function processRawExcelData(jsonRows) {
+        function parseRowsIntoRawData(jsonRows) {
+            if (jsonRows.length === 0) return;
             const sample = jsonRows[0];
             const headers = Object.keys(sample);
 
@@ -678,12 +732,7 @@
             const colStatus = findColumnName(headers, ['ESTADO', 'Disposition', 'Resultado', 'Status', 'Call Result', 'SUB_ESTADO']);
             const colHour = findColumnName(headers, ['INICIO', 'Hour', 'Hora', 'Call Hour']);
 
-            if (!colStatus) {
-                alert("No se pudo identificar una columna de Estado/Resultado de llamada (ej. ESTADO, Disposition, Resultado). Verifique su Excel.");
-                return;
-            }
-
-            rawData = [];
+            if (!colStatus) return;
 
             jsonRows.forEach((row, idx) => {
                 let rawStat = row[colStatus];
@@ -747,7 +796,7 @@
                 let dayOfWeek = dateVal.getDay();
 
                 rawData.push({
-                    id: idx,
+                    id: rawData.length,
                     campaign: campVal,
                     gw: gwVal,
                     status: normStat,
@@ -759,13 +808,6 @@
                     dayOfWeek: dayOfWeek
                 });
             });
-
-            populateFilterOptions();
-
-            document.getElementById('uploadPrompt').classList.add('hidden');
-            document.getElementById('dashboardContent').classList.remove('hidden');
-
-            applyFilters();
         }
 
         function populateFilterOptions() {
@@ -793,29 +835,24 @@
         }
 
         function applyFilters() {
-            showLoading();
+            const gw = document.getElementById('filterGW').value;
+            const camp = document.getElementById('filterCampaign').value;
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            const dayOfWeek = document.getElementById('filterDayOfWeek').value;
+            const hour = document.getElementById('filterHour').value;
 
-            setTimeout(() => {
-                const gw = document.getElementById('filterGW').value;
-                const camp = document.getElementById('filterCampaign').value;
-                const dateFrom = document.getElementById('filterDateFrom').value;
-                const dateTo = document.getElementById('filterDateTo').value;
-                const dayOfWeek = document.getElementById('filterDayOfWeek').value;
-                const hour = document.getElementById('filterHour').value;
+            filteredData = rawData.filter(d => {
+                if (gw !== 'ALL' && d.gw !== gw) return false;
+                if (camp !== 'ALL' && d.campaign !== camp) return false;
+                if (dateFrom && d.dateStr < dateFrom) return false;
+                if (dateTo && d.dateStr > dateTo) return false;
+                if (dayOfWeek !== 'ALL' && d.dayOfWeek !== parseInt(dayOfWeek, 10)) return false;
+                if (hour !== 'ALL' && d.hour !== parseInt(hour, 10)) return false;
+                return true;
+            });
 
-                filteredData = rawData.filter(d => {
-                    if (gw !== 'ALL' && d.gw !== gw) return false;
-                    if (camp !== 'ALL' && d.campaign !== camp) return false;
-                    if (dateFrom && d.dateStr < dateFrom) return false;
-                    if (dateTo && d.dateStr > dateTo) return false;
-                    if (dayOfWeek !== 'ALL' && d.dayOfWeek !== parseInt(dayOfWeek, 10)) return false;
-                    if (hour !== 'ALL' && d.hour !== parseInt(hour, 10)) return false;
-                    return true;
-                });
-
-                recalculateAll();
-                hideLoading();
-            }, 30);
+            recalculateAll();
         }
 
         function resetFilters() {
@@ -824,11 +861,13 @@
             document.getElementById('filterDayOfWeek').value = 'ALL';
             document.getElementById('filterHour').value = 'ALL';
             document.getElementById('filterTimeAggregation').value = 'DAILY';
+            document.getElementById('filterViewMode').value = 'ALL';
             const dates = rawData.map(d => d.dateStr).sort();
             if (dates.length > 0) {
                 document.getElementById('filterDateFrom').value = dates[0];
                 document.getElementById('filterDateTo').value = dates[dates.length - 1];
             }
+            toggleViewMode();
             applyFilters();
         }
 
@@ -884,7 +923,6 @@
 
             let score = 100;
 
-            // 1. Rejected Penalties (Heavy - Max penalty 50)
             if (stats.pct.REJECTED > config.rejectedMax) {
                 let diff = stats.pct.REJECTED - config.rejectedMax;
                 score -= Math.min(50, diff * 10 + 15);
@@ -892,24 +930,20 @@
                 score -= stats.pct.REJECTED * 2;
             }
 
-            // 2. Unallocated Penalties (Severe - Max penalty 40)
             if (stats.pct.UNALLOCATED > 0) {
                 score -= Math.min(40, stats.pct.UNALLOCATED * 20 + 15);
             }
 
-            // 3. Busy Penalties (Stronger Penalty: -2.5 pts per % above max)
             if (stats.pct.BUSY > config.busyMax) {
                 let diffBusy = stats.pct.BUSY - config.busyMax;
                 score -= Math.min(40, diffBusy * 2.5 + 5);
             }
 
-            // 4. Congestion Penalties (-3 pts per % above max)
             if (stats.pct.CONGESTION > config.congestionMax) {
                 let diffCong = stats.pct.CONGESTION - config.congestionMax;
                 score -= Math.min(40, diffCong * 3 + 10);
             }
 
-            // 5. No Answer Minimum Threshold Check (Expected Min: 25%)
             if (stats.pct.NOANSWER < config.noAnswerMin) {
                 let diffNoAns = config.noAnswerMin - stats.pct.NOANSWER;
                 score -= Math.min(30, diffNoAns * 1.5);
@@ -1533,10 +1567,6 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Resumen_GWs");
             XLSX.writeFile(wb, "Control_Telefonia_GWs_Resumen.xlsx");
-        }
-
-        function exportDashboardPDF() {
-            window.print();
         }
     </script>
 </body>
