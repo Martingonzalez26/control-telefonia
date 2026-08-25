@@ -26,8 +26,7 @@
     </script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS & PapaParse -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -367,7 +366,7 @@
     </main>
 
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Control de Telefonía v6.6 • Conexión CDN LFS Integrada</p>
+        <p>Control de Telefonía v7.3 • Reglas de Base 10, 11, 4 y 7 Integradas</p>
     </footer>
 
     <script>
@@ -382,90 +381,46 @@
         const REPO_NAME = "control-telefonia";
         const FOLDER_PATH = "datos";
 
-        const STATIC_30 = [
-            "Detalle_de_transferencias_por_campaña_24082026_140422479_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_24082026_140524951_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093301870_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093313280_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_09331599_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093322190_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_09332718_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_09334227_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093405127_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093419380_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093434633_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093505812_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093522363_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093556779_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093624525_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_093643420_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_094807887_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_094822625_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_094859305_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_094940800_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095053389_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095147558_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095210960_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095233623_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095252564_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095313226_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095358946_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095423436_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095446676_optimizado.csv",
-            "Detalle_de_transferencias_por_campaña_25082026_095512510_optimizado.csv"
-        ];
-
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
             loadFolderData();
         });
 
-        async function fetchCsvText(fileName) {
-            // Intentar primero desde raw.githubusercontent.com (resuelve LFS automáticamente)
-            let rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER_PATH}/${fileName}`;
-            try {
-                let res = await fetch(rawUrl);
-                if (res.ok) {
-                    let text = await res.text();
-                    if (!text.startsWith("version https://git-lfs.github.com")) {
-                        return text;
-                    }
-                }
-            } catch (e) {
-                console.warn("Fallo raw CDN:", fileName, e);
-            }
-
-            // Fallback a ruta relativa local
-            try {
-                let localRes = await fetch(`datos/${fileName}`);
-                if (localRes.ok) return await localRes.text();
-            } catch (e) {
-                console.warn("Fallo local fetch:", fileName, e);
-            }
-
-            return null;
-        }
-
         async function loadFolderData() {
-            showLoading("Escaneando carpeta 'datos'...", "Cargando reportes completos...");
+            showLoading("Escaneando carpeta 'datos'...", "Buscando reportes...");
             rawData = [];
 
             try {
-                document.getElementById('filesLoadedCount').textContent = STATIC_30.length;
+                let fileUrls = [];
+
+                let apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_PATH}?t=${Date.now()}`;
+                let res = await fetch(apiUrl);
+                if (res.ok) {
+                    let items = await res.json();
+                    fileUrls = items
+                        .filter(i => i.type === 'file' && i.name.endsWith('.csv'))
+                        .map(i => ({ name: i.name, url: i.download_url }));
+                }
+
+                document.getElementById('filesLoadedCount').textContent = fileUrls.length;
                 let loadedCount = 0;
 
-                for (let fileName of STATIC_30) {
-                    showLoading(`Procesando (${loadedCount + 1}/${STATIC_30.length})...`, fileName);
-                    let csvText = await fetchCsvText(fileName);
-
-                    if (csvText) {
-                        Papa.parse(csvText, {
-                            header: true,
-                            skipEmptyLines: true,
-                            complete: function(results) {
-                                parseRowsIntoRawData(results.data);
-                            }
-                        });
+                for (let fileObj of fileUrls) {
+                    showLoading(`Procesando (${loadedCount + 1}/${fileUrls.length})...`, fileObj.name);
+                    try {
+                        let fileRes = await fetch(fileObj.url);
+                        if (fileRes.ok) {
+                            let csvText = await fileRes.text();
+                            Papa.parse(csvText, {
+                                header: true,
+                                skipEmptyLines: true,
+                                complete: function(results) {
+                                    parseRowsIntoRawData(results.data);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Error leyendo archivo:", fileObj.name, e);
                     }
                     loadedCount++;
                 }
@@ -477,7 +432,7 @@
                 document.getElementById('lastSyncTime').textContent = `Actualizado: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
             } catch (err) {
-                console.warn("Error general al procesar carpeta:", err);
+                console.warn("Error al escanear carpeta:", err);
             } finally {
                 hideLoading();
             }
@@ -526,14 +481,30 @@
                 let normStat = normalizeStatus(rawStat, subStat);
                 let gwVal = row['Dispositivo'] || row['GW'] || row['Gateway'] || "GW_General";
 
+                // Clasificación estricta por el campo BASE:
+                // Campaña 92 -> Base 10, 11 o 92
+                // Campaña 91 -> Base 4, 7 o 91
                 let campaignVal = "Campaña 91";
-                let baseVal = String(row['BASE'] || '').trim();
-                let crmVal = String(row['CRM'] || '').trim();
+                
+                let baseVal = String(row['BASE'] || row['Base'] || row['base'] || '').trim();
                 let statStr = String(rawStat || '').trim();
+                let campCol = String(row['CAMPAÑA'] || row['Campaña'] || row['Campaign'] || '').trim().toUpperCase();
 
-                if (statStr === '200092' || baseVal === '2' || crmVal === '0000') {
+                if (
+                    baseVal === '10' || 
+                    baseVal === '11' || 
+                    baseVal.includes('92') || 
+                    statStr.includes('200092') || 
+                    campCol.includes('92')
+                ) {
                     campaignVal = "Campaña 92";
-                } else {
+                } else if (
+                    baseVal === '4' || 
+                    baseVal === '7' || 
+                    baseVal.includes('91') || 
+                    statStr.includes('200091') || 
+                    campCol.includes('91')
+                ) {
                     campaignVal = "Campaña 91";
                 }
 
