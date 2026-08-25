@@ -367,7 +367,7 @@
     </main>
 
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Control de Telefonía v6.0 • Mapeo Exclusivo Campañas 91 & 92</p>
+        <p>Control de Telefonía v6.1 • Soporte Integrado Campañas 91 & 92</p>
     </footer>
 
     <script>
@@ -462,7 +462,7 @@
             let s = String(statusRaw || '').trim().toUpperCase().replace(/[\s\-_]/g, '');
             let sub = String(subStatusRaw || '').trim().toUpperCase().replace(/[\s\-_]/g, '');
 
-            if (s === '200091') return 'ANSWER';
+            if (s === '200091' || s === '200092') return 'ANSWER';
             if (s.includes('NOANSWER') || s.includes('NOANS')) return 'NOANSWER';
             if (s.includes('ANSWER') || s.includes('OK') || sub.includes('ANSWER')) return 'ANSWER';
             if (s.includes('BUSY') || s.includes('OCUPADO')) return 'BUSY';
@@ -483,26 +483,27 @@
                 let normStat = normalizeStatus(rawStat, subStat);
                 let gwVal = row['Dispositivo'] || row['GW'] || row['Gateway'] || "GW_General";
 
-                // Mapeo Inteligente a Campaña 91 vs Campaña 92
+                // Clasificación Inteligente Campaña 91 vs Campaña 92
                 let campaignVal = "Campaña 91";
                 let baseVal = String(row['BASE'] || '').trim();
                 let crmVal = String(row['CRM'] || '').trim();
+                let statStr = String(rawStat || '').trim();
 
-                if (baseVal === '2' || crmVal === '0000') {
+                if (statStr === '200092' || baseVal === '2' || crmVal === '0000') {
                     campaignVal = "Campaña 92";
                 } else {
                     campaignVal = "Campaña 91";
                 }
 
-                // Extracción Resiliente de Fecha y Hora
+                // Extracción de Fecha y Hora
                 let dateVal = null;
                 let hourVal = 9;
 
                 let timeCandidate = row['INICIO'];
-                if (!timeCandidate || timeCandidate === 'AGENT' || !timeCandidate.includes('/')) {
+                if (!timeCandidate || timeCandidate === 'AGENT' || timeCandidate === 'RINGING' || !timeCandidate.includes('/')) {
                     timeCandidate = row['CONEXION'];
                 }
-                if (!timeCandidate || timeCandidate === 'AGENT' || !timeCandidate.includes('/')) {
+                if (!timeCandidate || timeCandidate === 'AGENT' || timeCandidate === 'RINGING' || !timeCandidate.includes('/')) {
                     timeCandidate = row['FIN'];
                 }
 
@@ -523,7 +524,6 @@
                     }
                 }
 
-                // Si viene como entero YYYYMMDD en FECHA
                 if (!dateVal || isNaN(dateVal.getTime())) {
                     let rawFecha = String(row['FECHA'] || '').trim();
                     if (rawFecha.length === 8) {
@@ -534,8 +534,7 @@
                 if (!dateVal || isNaN(dateVal.getTime())) return;
 
                 let dayOfWeek = dateVal.getDay();
-                // Excluir Sábados (6) y Domingos (0)
-                if (dayOfWeek === 0 || dayOfWeek === 6) return;
+                if (dayOfWeek === 0 || dayOfWeek === 6) return; // Excluir Sábados y Domingos
 
                 let dateStr = dateVal.toISOString().split('T')[0];
 
