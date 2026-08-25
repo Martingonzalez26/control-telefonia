@@ -367,7 +367,7 @@
     </main>
 
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Control de Telefonía v6.4 • Escaneo Automático Dinámico</p>
+        <p>Control de Telefonía v6.5 • Compatibilidad LFS Integrada</p>
     </footer>
 
     <script>
@@ -387,14 +387,29 @@
             loadFolderData();
         });
 
+        async function fetchCsvContent(url, fileName) {
+            let res = await fetch(url);
+            if (!res.ok) return null;
+            let text = await res.text();
+
+            // Si el archivo es un puntero Git LFS
+            if (text.startsWith("version https://git-lfs.github.com")) {
+                let mediaUrl = `https://media.githubusercontent.com/media/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER_PATH}/${fileName}`;
+                let mediaRes = await fetch(mediaUrl);
+                if (mediaRes.ok) {
+                    text = await mediaRes.text();
+                }
+            }
+            return text;
+        }
+
         async function loadFolderData() {
-            showLoading("Escaneando carpeta 'datos'...", "Descargando lista completa de reportes...");
+            showLoading("Escaneando carpeta 'datos'...", "Descargando reportes completos...");
             rawData = [];
 
             try {
                 let fileUrls = [];
 
-                // 1. Intentar obtener la lista viva de GitHub API
                 try {
                     let apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_PATH}?t=${Date.now()}`;
                     let res = await fetch(apiUrl);
@@ -405,10 +420,9 @@
                             .map(i => ({ name: i.name, url: i.download_url }));
                     }
                 } catch (e) {
-                    console.warn("API GitHub no disponible, fallback a listado estático:", e);
+                    console.warn("API de GitHub no disponible:", e);
                 }
 
-                // 2. Si la API de GitHub falló o rebasó cuotas, usar listado estático completo de los 30 archivos
                 if (fileUrls.length === 0) {
                     const STATIC_30 = [
                         "Detalle_de_transferencias_por_campaña_24082026_140422479_optimizado.csv",
@@ -451,9 +465,8 @@
                 for (let fileObj of fileUrls) {
                     showLoading(`Procesando (${loadedCount + 1}/${fileUrls.length})...`, fileObj.name);
                     try {
-                        let fileRes = await fetch(fileObj.url);
-                        if (fileRes.ok) {
-                            let csvText = await fileRes.text();
+                        let csvText = await fetchCsvContent(fileObj.url, fileObj.name);
+                        if (csvText) {
                             Papa.parse(csvText, {
                                 header: true,
                                 skipEmptyLines: true,
@@ -463,7 +476,7 @@
                             });
                         }
                     } catch (e) {
-                        console.warn("No se pudo leer archivo:", fileObj.name, e);
+                        console.warn("No se pudo leer:", fileObj.name, e);
                     }
                     loadedCount++;
                 }
@@ -475,7 +488,7 @@
                 document.getElementById('lastSyncTime').textContent = `Actualizado: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
             } catch (err) {
-                console.warn("Error general al cargar carpeta:", err);
+                console.warn("Error general:", err);
             } finally {
                 hideLoading();
             }
@@ -513,7 +526,7 @@
         }
 
         function parseRowsIntoRawData(jsonRows) {
-            if (jsonRows.length === 0) return;
+            if (!jsonRows || jsonRows.length === 0) return;
 
             jsonRows.forEach((row) => {
                 let rawStat = row['ESTADO'] || row['Estado'] || row['Disposition'];
