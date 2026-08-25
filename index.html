@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Telefonía & Contactación</title>
+    <title>Control de Telefonía & Gateways</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -26,19 +26,12 @@
     </script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) -->
+    <!-- SheetJS & PapaParse -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --color-bg-light: #E9E6E7;
-            --color-brand-dark: #5E5653;
-            --color-brand-blue: #6B7C98;
-            --color-brand-slate: #7B7F8A;
-            --color-brand-sand: #AB978C;
-        }
-
         body.light { background-color: #f4f3f4; color: #333333; }
         body.dark { background-color: #1a1a1a; color: #E9E6E7; }
 
@@ -62,9 +55,6 @@
         .btn-brand-blue { background-color: #6B7C98; color: #ffffff; }
         .btn-brand-blue:hover { background-color: #5a6a84; }
 
-        .btn-brand-sand { background-color: #AB978C; color: #ffffff; }
-        .btn-brand-sand:hover { background-color: #988479; }
-
         .heatmap-cell { transition: all 0.2s ease; cursor: pointer; }
         .heatmap-cell:hover { transform: scale(1.05); z-index: 10; }
 
@@ -80,7 +70,7 @@
             <i data-lucide="folder-search" class="w-6 h-6 text-[#AB978C] absolute"></i>
         </div>
         <h3 class="text-lg font-bold mt-4 tracking-wide" id="loadingTitle">Escaneando carpeta 'datos'...</h3>
-        <p class="text-xs text-slate-300 mt-1" id="loadingSub">Cargando y unificando reportes pesados automáticamente.</p>
+        <p class="text-xs text-slate-300 mt-1" id="loadingSub">Cargando y procesando reportes de telefonía.</p>
     </div>
 
     <!-- Header -->
@@ -92,17 +82,17 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight text-white">Control de Telefonía & Gateways</h1>
-                    <p class="text-xs text-slate-300">Consolidado automático desde la carpeta 'datos'</p>
+                    <p class="text-xs text-slate-300">Consolidado Campañas 91 y 92</p>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
-                <button onclick="loadFolderData()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-3.5 rounded-lg transition flex items-center space-x-2 shadow-sm" title="Revisar si hay archivos nuevos en la carpeta">
+                <button onclick="loadFolderData()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-3.5 rounded-lg transition flex items-center space-x-2 shadow-sm">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     <span>Recargar Carpeta</span>
                 </button>
 
-                <button onclick="toggleDarkMode()" id="darkModeBtn" class="p-2 rounded-lg border border-[#7B7F8A] bg-[#5E5653] hover:bg-[#7B7F8A] text-white transition flex items-center space-x-1 text-xs font-semibold" title="Cambiar Modo Claro/Oscuro">
+                <button onclick="toggleDarkMode()" id="darkModeBtn" class="p-2 rounded-lg border border-[#7B7F8A] bg-[#5E5653] hover:bg-[#7B7F8A] text-white transition flex items-center space-x-1 text-xs font-semibold">
                     <i data-lucide="moon" id="darkModeIcon" class="w-4 h-4"></i>
                     <span id="darkModeText">Oscuro</span>
                 </button>
@@ -116,7 +106,7 @@
         </div>
     </header>
 
-    <!-- Main Content Container -->
+    <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
         <div id="folderStatusBanner" class="custom-card p-3 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-200">
@@ -135,34 +125,18 @@
                 <div class="flex flex-wrap gap-3 items-center text-xs flex-1">
                     
                     <div class="flex flex-col">
-                        <label class="font-semibold text-slate-500 mb-1">Modo de Vista</label>
-                        <select id="filterViewMode" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-bold text-indigo-600 dark:text-indigo-400" onchange="toggleViewMode()">
-                            <option value="ALL">Vista General + Campañas</option>
-                            <option value="GENERAL">Solo Vista General (Global)</option>
-                            <option value="CAMPAIGNS">Solo Desglose por Campaña</option>
-                        </select>
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label class="font-semibold text-slate-500 mb-1">Vista Temporal</label>
-                        <select id="filterTimeAggregation" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-bold text-[#6B7C98]" onchange="applyFilters()">
-                            <option value="DAILY">Diario (Día por Día)</option>
-                            <option value="WEEKLY">Semanal (Por Semana)</option>
-                            <option value="MONTHLY">Mensual (Por Mes)</option>
+                        <label class="font-semibold text-slate-500 mb-1">Campaña</label>
+                        <select id="filterCampaign" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-bold text-indigo-600 dark:text-indigo-400" onchange="applyFilters()">
+                            <option value="ALL">Todas (Campaña 91 y 92)</option>
+                            <option value="Campaña 91">Campaña 91</option>
+                            <option value="Campaña 92">Campaña 92</option>
                         </select>
                     </div>
 
                     <div class="flex flex-col">
                         <label class="font-semibold text-slate-500 mb-1">Dispositivo / GW</label>
-                        <select id="filterGW" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-medium" onchange="applyFilters()">
+                        <select id="filterGW" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5" onchange="applyFilters()">
                             <option value="ALL">Todos los GWs</option>
-                        </select>
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label class="font-semibold text-slate-500 mb-1">Campaña</label>
-                        <select id="filterCampaign" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-medium" onchange="applyFilters()">
-                            <option value="ALL">Todas las campañas</option>
                         </select>
                     </div>
 
@@ -178,22 +152,20 @@
 
                     <div class="flex flex-col">
                         <label class="font-semibold text-slate-500 mb-1">Día de Semana</label>
-                        <select id="filterDayOfWeek" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5" onchange="applyFilters()">
-                            <option value="ALL">Todos los días</option>
+                        <select id="filterDayOfWeek" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5 font-semibold" onchange="applyFilters()">
+                            <option value="ALL">Todos los Días Hábiles (Lunes a Viernes)</option>
                             <option value="1">Lunes</option>
                             <option value="2">Martes</option>
                             <option value="3">Miércoles</option>
                             <option value="4">Jueves</option>
                             <option value="5">Viernes</option>
-                            <option value="6">Sábado</option>
-                            <option value="0">Domingo</option>
                         </select>
                     </div>
 
                     <div class="flex flex-col">
                         <label class="font-semibold text-slate-500 mb-1">Franja Horaria</label>
                         <select id="filterHour" class="border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2.5 py-1.5" onchange="applyFilters()">
-                            <option value="ALL">Todas las horas</option>
+                            <option value="ALL">Todas las horas (00 a 23 hs)</option>
                         </select>
                     </div>
                 </div>
@@ -202,10 +174,6 @@
                     <button onclick="resetFilters()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center space-x-1">
                         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                         <span>Limpiar Filtros</span>
-                    </button>
-                    <button onclick="exportProcessedData()" class="btn-brand-sand text-xs font-semibold px-3 py-1.5 rounded transition flex items-center space-x-1">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                        <span>Exportar Excel</span>
                     </button>
                 </div>
             </div>
@@ -235,28 +203,26 @@
                 </div>
 
                 <div class="custom-card p-5 flex flex-col justify-center">
-                    <div class="text-[11px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Variación vs Período Anterior</div>
+                    <div class="text-[11px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Distribución por Campaña</div>
                     <div class="grid grid-cols-2 gap-1.5 text-xs">
-                        <div><span class="text-slate-400">Answer:</span> <span id="compAnswer" class="font-bold">--</span></div>
-                        <div><span class="text-slate-400">Rejected:</span> <span id="compRejected" class="font-bold">--</span></div>
-                        <div><span class="text-slate-400">Busy:</span> <span id="compBusy" class="font-bold">--</span></div>
-                        <div><span class="text-slate-400">Ans/NoAns:</span> <span id="compRatio" class="font-bold">--</span></div>
+                        <div><span class="text-slate-400">Campaña 91:</span> <span id="camp91Count" class="font-bold text-indigo-600">0</span></div>
+                        <div><span class="text-slate-400">Campaña 92:</span> <span id="camp92Count" class="font-bold text-indigo-600">0</span></div>
                     </div>
                 </div>
             </div>
 
-            <!-- KPIs Cards Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <!-- KPIs Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="custom-card p-4">
                     <div class="text-[11px] font-semibold text-slate-400 uppercase">Total Llamadas</div>
                     <div id="kpiTotalCalls" class="text-2xl font-black mt-1">0</div>
-                    <div class="text-[10px] text-slate-400 mt-1">GWs: <span id="kpiTotalGWs">0</span> | Camp: <span id="kpiTotalCampaigns">0</span></div>
+                    <div class="text-[10px] text-slate-400 mt-1">GWs Activos: <span id="kpiTotalGWs">0</span></div>
                 </div>
 
                 <div class="custom-card p-4 border-t-4 border-emerald-500">
                     <div class="flex justify-between items-center">
                         <span class="text-[11px] font-semibold text-slate-400 uppercase">Answer</span>
-                        <span id="badgeAnswer" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
                     </div>
                     <div id="kpiAnswerPct" class="text-2xl font-black mt-1">0.0%</div>
                     <div id="kpiAnswerCount" class="text-[10px] text-slate-400 mt-0.5">0 llamadas</div>
@@ -265,7 +231,7 @@
                 <div class="custom-card p-4 border-t-4 border-[#7B7F8A]">
                     <div class="flex justify-between items-center">
                         <span class="text-[11px] font-semibold text-slate-400 uppercase">No Answer</span>
-                        <span id="badgeNoAnswer" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">⚪ Normal</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">⚪ Normal</span>
                     </div>
                     <div id="kpiNoAnswerPct" class="text-2xl font-black mt-1">0.0%</div>
                     <div id="kpiNoAnswerCount" class="text-[10px] text-slate-400 mt-0.5">0 llamadas</div>
@@ -274,108 +240,30 @@
                 <div class="custom-card p-4 border-t-4 border-amber-500">
                     <div class="flex justify-between items-center">
                         <span class="text-[11px] font-semibold text-slate-400 uppercase">Busy</span>
-                        <span id="badgeBusy" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
                     </div>
                     <div id="kpiBusyPct" class="text-2xl font-black mt-1">0.0%</div>
                     <div id="kpiBusyCount" class="text-[10px] text-slate-400 mt-0.5">0 llamadas</div>
                 </div>
 
-                <div class="custom-card p-4 border-t-4 border-orange-500">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-slate-400 uppercase">Congestion</span>
-                        <span id="badgeCongestion" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
-                    </div>
-                    <div id="kpiCongestionPct" class="text-2xl font-black mt-1">0.0%</div>
-                    <div id="kpiCongestionCount" class="text-[10px] text-slate-400 mt-0.5">0 llamadas</div>
-                </div>
-
                 <div class="custom-card p-4 border-t-4 border-rose-600">
                     <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-slate-400 uppercase">Rejected</span>
-                        <span id="badgeRejected" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase">Rejected / Congestion</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🟢 OK</span>
                     </div>
                     <div id="kpiRejectedPct" class="text-2xl font-black text-rose-600 mt-1">0.0%</div>
                     <div id="kpiRejectedCount" class="text-[10px] text-slate-400 mt-0.5">0 llamadas</div>
                 </div>
             </div>
 
-            <div id="unallocatedAlertBanner" class="hidden custom-card p-4 bg-rose-50 border-rose-300 border flex items-center space-x-3 text-rose-800">
-                <i data-lucide="alert-triangle" class="w-6 h-6 text-rose-600 shrink-0"></i>
-                <div>
-                    <span class="font-bold">¡ALERTA CRÍTICA UNALLOCATED!</span>
-                    <span class="text-sm ml-2">Se detectaron <b id="unallocatedCount">0</b> llamadas en UNALLOCATED (<span id="unallocatedPct">0%</span>). Indica números inexistentes o fallas de enrutamiento.</span>
-                </div>
-            </div>
-
-            <!-- GW TABLE -->
-            <div class="custom-card p-5">
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-                    <div>
-                        <h2 class="text-base font-bold flex items-center space-x-2">
-                            <i data-lucide="server" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Análisis de Performance por Dispositivo / GW (Gateway)</span>
-                        </h2>
-                        <p class="text-xs text-slate-500">Evaluación de estabilidad de canales por trama telefónica / GW para detectar cuellos de botella</p>
-                    </div>
-                    <input type="text" id="gwSearch" placeholder="Buscar GW..." oninput="renderGWTable()" class="text-xs border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-3 py-1.5">
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-[#E9E6E7] dark:bg-slate-700 text-[#5E5653] dark:text-slate-200 font-bold border-b">
-                                <th class="p-2.5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('gw')">GW / Dispositivo ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('totalCalls')">Llamadas ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('score')">Score GW ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('answerPct')">Answer % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('noAnswerPct')">No Answer % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('rejectedPct')">Rejected % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('busyPct')">Busy % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('congestionPct')">Congestion % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortGWTable('unallocatedPct')">Unallocated % ⇕</th>
-                                <th class="p-2.5 text-center">Estado GW</th>
-                            </tr>
-                        </thead>
-                        <tbody id="gwTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Automatic Alerts & Recommendations -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="custom-card p-5">
-                    <div class="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-700 pb-3 mb-4">
-                        <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
-                        <h2 class="text-base font-bold">Alertas Detectadas Automáticamente</h2>
-                    </div>
-                    <div id="alertsContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
-                </div>
-
-                <div class="custom-card p-5">
-                    <div class="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-700 pb-3 mb-4">
-                        <i data-lucide="lightbulb" class="w-5 h-5 text-[#6B7C98]"></i>
-                        <h2 class="text-base font-bold">Conclusiones & Recomendaciones de Negocio</h2>
-                    </div>
-                    <div id="recommendationsContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1 text-sm"></div>
-                </div>
-            </div>
-
-            <!-- Evolutivo -->
+            <!-- Evolutivo Diario -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="custom-card p-5 flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="trending-up" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span id="timeChartTitle">Evolutivo por Vista Temporal</span>
+                            <span>Evolutivo Diario por Categoría (%)</span>
                         </h2>
-                        <select id="timeChartMetric" class="text-xs border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2 py-1" onchange="renderTimeChart()">
-                            <option value="COMBINED">Todas las Categorías (%)</option>
-                            <option value="ANSWER">Answer %</option>
-                            <option value="NOANSWER">No Answer %</option>
-                            <option value="REJECTED">Rejected %</option>
-                            <option value="BUSY">Busy %</option>
-                            <option value="CONGESTION">Congestion %</option>
-                        </select>
                     </div>
                     <div class="h-72 relative flex-1">
                         <canvas id="timeChart"></canvas>
@@ -386,7 +274,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="bar-chart-3" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Comparativo de Parámetros Agrupados</span>
+                            <span>Volumen de Llamadas por Día</span>
                         </h2>
                     </div>
                     <div class="h-72 relative flex-1">
@@ -395,13 +283,13 @@
                 </div>
             </div>
 
-            <!-- Hourly & Day of Week -->
+            <!-- Performance por Hora y Día de Semana -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="custom-card p-5">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="clock" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Performance por Hora del Día</span>
+                            <span>Performance por Franja Horaria (00 a 23 hs)</span>
                         </h2>
                         <div id="bestHourBadge" class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">
                             Mejor Hora: --:00
@@ -416,7 +304,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="calendar-days" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Performance por Día de la Semana</span>
+                            <span>Performance por Día Hábil (Lunes a Viernes)</span>
                         </h2>
                         <div id="bestDayBadge" class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">
                             Mejor Día: --
@@ -428,24 +316,15 @@
                 </div>
             </div>
 
-            <!-- Heatmap -->
+            <!-- Heatmap Corregido -->
             <div class="custom-card p-5">
                 <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                     <div>
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="grid" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Heatmap: Día de Semana vs Hora</span>
+                            <span>Heatmap: Día Hábil vs Franja Horaria</span>
                         </h2>
-                        <p class="text-xs text-slate-500">Matriz de densidad para encontrar las franjas horarias de mejor contactación</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <label class="text-xs font-semibold text-slate-500">Métrica:</label>
-                        <select id="heatmapMetric" class="text-xs border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-2 py-1" onchange="renderHeatmap()">
-                            <option value="ANSWER">Answer %</option>
-                            <option value="REJECTED">Rejected %</option>
-                            <option value="BUSY">Busy %</option>
-                            <option value="TOTAL">Total Llamadas</option>
-                        </select>
+                        <p class="text-xs text-slate-500">Matriz de densidad operativa (Lunes a Viernes)</p>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -453,32 +332,29 @@
                 </div>
             </div>
 
-            <!-- Campaign Analysis Table -->
+            <!-- Desglose Campañas 91 y 92 -->
             <div class="custom-card p-5">
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <div class="flex justify-between items-center mb-4">
                     <div>
                         <h2 class="text-base font-bold flex items-center space-x-2">
                             <i data-lucide="award" class="w-5 h-5 text-[#6B7C98]"></i>
-                            <span>Ranking y Desglose por Campaña</span>
+                            <span>Desglose Consolidado: Campaña 91 vs Campaña 92</span>
                         </h2>
-                        <p class="text-xs text-slate-500">Comparativa completa de performance y detección de campañas con desvíos</p>
+                        <p class="text-xs text-slate-500">Métricas exclusivas de las dos campañas operativas</p>
                     </div>
-                    <input type="text" id="tableSearch" placeholder="Buscar campaña..." oninput="renderCampaignTable()" class="text-xs border border-slate-300 dark:border-slate-600 dark:bg-[#1a1a1a] rounded px-3 py-1.5">
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse">
                         <thead>
                             <tr class="bg-[#E9E6E7] dark:bg-slate-700 text-[#5E5653] dark:text-slate-200 font-bold border-b">
-                                <th class="p-2.5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('campaign')">Campaña ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('totalCalls')">Llamadas ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('score')">Score ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('answerPct')">Answer % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('noAnswerPct')">No Answer % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('rejectedPct')">Rejected % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('busyPct')">Busy % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('congestionPct')">Congestion % ⇕</th>
-                                <th class="p-2.5 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600" onclick="sortTable('unallocatedPct')">Unallocated % ⇕</th>
+                                <th class="p-2.5">Campaña</th>
+                                <th class="p-2.5 text-right">Llamadas Totales</th>
+                                <th class="p-2.5 text-right">Score</th>
+                                <th class="p-2.5 text-right">Answer %</th>
+                                <th class="p-2.5 text-right">No Answer %</th>
+                                <th class="p-2.5 text-right">Busy %</th>
+                                <th class="p-2.5 text-right">Rejected %</th>
                                 <th class="p-2.5 text-center">Estado</th>
                             </tr>
                         </thead>
@@ -487,42 +363,11 @@
                 </div>
             </div>
 
-            <!-- Threshold Configuration -->
-            <div class="custom-card p-5 bg-[#E9E6E7]/50 dark:bg-slate-800/50">
-                <div class="flex items-center space-x-2 mb-3">
-                    <i data-lucide="sliders" class="w-4 h-4 text-[#5E5653]"></i>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-[#5E5653] dark:text-slate-300">Configuración de Parámetros de Alerta & Score</h3>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                    <div>
-                        <label class="block text-slate-500 mb-1">Max Rejected Tolera (%):</label>
-                        <input type="number" id="cfgRejectedMax" value="3.0" step="0.5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
-                    </div>
-                    <div>
-                        <label class="block text-slate-500 mb-1">Max Busy Tolera (%):</label>
-                        <input type="number" id="cfgBusyMax" value="5.0" step="0.5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
-                    </div>
-                    <div>
-                        <label class="block text-slate-500 mb-1">Max Congestion Tolera (%):</label>
-                        <input type="number" id="cfgCongestionMax" value="5.0" step="0.5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
-                    </div>
-                    <div>
-                        <label class="block text-slate-500 mb-1">Min No Answer Esperado (%):</label>
-                        <input type="number" id="cfgNoAnswerMin" value="25.0" step="1.0" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
-                    </div>
-                    <div>
-                        <label class="block text-slate-500 mb-1">Umbral Score Crítico:</label>
-                        <input type="number" id="cfgScoreCritical" value="60" step="5" class="w-full border rounded px-2 py-1 dark:bg-[#1a1a1a]" onchange="recalculateAll()">
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Aplicación Web de Control de Telefonía v4.0 • Lectura Automática de Repositorio GitHub</p>
+        <p>Control de Telefonía v6.0 • Mapeo Exclusivo Campañas 91 & 92</p>
     </footer>
 
     <script>
@@ -532,18 +377,6 @@
         let timeBarChartObj = null;
         let hourlyChartObj = null;
         let dayOfWeekChartObj = null;
-        let tableSortCol = 'score';
-        let tableSortAsc = false;
-        let gwSortCol = 'score';
-        let gwSortAsc = false;
-
-        let config = {
-            rejectedMax: 3.0,
-            busyMax: 5.0,
-            congestionMax: 5.0,
-            scoreCritical: 60,
-            noAnswerMin: 25.0
-        };
 
         const REPO_OWNER = "Martingonzalez26";
         const REPO_NAME = "control-telefonia";
@@ -555,16 +388,14 @@
         });
 
         async function loadFolderData() {
-            showLoading("Escaneando carpeta 'datos'...", "Buscando reportes Excel/CSV en GitHub...");
+            showLoading("Escaneando carpeta 'datos'...", "Cargando reportes desde GitHub...");
             rawData = [];
 
             try {
                 let apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_PATH}`;
                 let res = await fetch(apiUrl);
                 
-                if (!res.ok) {
-                    throw new Error("No se pudo acceder a la carpeta datos.");
-                }
+                if (!res.ok) throw new Error("No se pudo acceder a la carpeta datos.");
 
                 let items = await res.json();
                 let validFiles = items.filter(i => i.type === 'file' && (i.name.endsWith('.xlsx') || i.name.endsWith('.xls') || i.name.endsWith('.csv')));
@@ -583,13 +414,16 @@
                     let downloadUrl = fileObj.download_url;
                     
                     let fileRes = await fetch(downloadUrl);
-                    let arrayBuffer = await fileRes.arrayBuffer();
+                    let csvText = await fileRes.text();
 
-                    let workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
-                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    let rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            parseRowsIntoRawData(results.data);
+                        }
+                    });
 
-                    parseRowsIntoRawData(rows);
                     loadedCount++;
                 }
 
@@ -600,7 +434,7 @@
                 document.getElementById('lastSyncTime').textContent = `Actualizado: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
             } catch (err) {
-                console.warn("No se pudo cargar la carpeta automáticamente: ", err);
+                console.warn("Error al cargar archivos:", err);
             } finally {
                 hideLoading();
             }
@@ -608,51 +442,15 @@
 
         function toggleDarkMode() {
             const body = document.body;
-            const isDark = body.classList.contains('dark');
-            const darkModeIcon = document.getElementById('darkModeIcon');
-            const darkModeText = document.getElementById('darkModeText');
-
-            if (isDark) {
-                body.classList.remove('dark');
-                body.classList.add('light');
-                darkModeText.textContent = 'Oscuro';
-                darkModeIcon.setAttribute('data-lucide', 'moon');
-            } else {
-                body.classList.remove('light');
-                body.classList.add('dark');
-                darkModeText.textContent = 'Claro';
-                darkModeIcon.setAttribute('data-lucide', 'sun');
-            }
+            body.classList.toggle('dark');
+            body.classList.toggle('light');
             lucide.createIcons();
-            
-            if (filteredData.length > 0) {
-                renderTimeChart();
-                renderTimeBarChart();
-                renderHourlyChart();
-                renderDayOfWeekChart();
-            }
-        }
-
-        function toggleViewMode() {
-            const mode = document.getElementById('filterViewMode').value;
-            const gwSection = document.getElementById('gwTableBody').closest('.custom-card');
-            const campaignSection = document.getElementById('campaignTableBody').closest('.custom-card');
-
-            if (mode === 'GENERAL') {
-                if (gwSection) gwSection.classList.remove('hidden');
-                if (campaignSection) campaignSection.classList.add('hidden');
-            } else if (mode === 'CAMPAIGNS') {
-                if (gwSection) gwSection.classList.add('hidden');
-                if (campaignSection) campaignSection.classList.remove('hidden');
-            } else {
-                if (gwSection) gwSection.classList.remove('hidden');
-                if (campaignSection) campaignSection.classList.remove('hidden');
-            }
+            if (filteredData.length > 0) recalculateAll();
         }
 
         function showLoading(title, sub) {
-            if (title) document.getElementById('loadingTitle').textContent = title;
-            if (sub) document.getElementById('loadingSub').textContent = sub;
+            document.getElementById('loadingTitle').textContent = title;
+            document.getElementById('loadingSub').textContent = sub;
             document.getElementById('loadingOverlay').classList.remove('hidden');
         }
 
@@ -660,150 +458,94 @@
             document.getElementById('loadingOverlay').classList.add('hidden');
         }
 
-        function normalizeStatus(statusRaw) {
-            if (!statusRaw) return 'OTHER';
-            let s = String(statusRaw).trim().toUpperCase().replace(/[\s\-_]/g, '');
-            if (s === 'NOANSWER' || s === 'NOANS' || s === 'SINRESPUESTA') return 'NOANSWER';
-            if (s === 'ANSWER' || s === 'ANSWERED' || s === 'ATENDIDO' || s === 'OK') return 'ANSWER';
-            if (s === 'BUSY' || s === 'OCUPADO') return 'BUSY';
-            if (s === 'CONGESTION' || s === 'CONGESTIONADO') return 'CONGESTION';
-            if (s === 'REJECTED' || s === 'RECHAZADO') return 'REJECTED';
-            if (s === 'UNALLOCATED' || s === 'UNASSIGNED' || s === 'INEXISTENTE') return 'UNALLOCATED';
+        function normalizeStatus(statusRaw, subStatusRaw) {
+            let s = String(statusRaw || '').trim().toUpperCase().replace(/[\s\-_]/g, '');
+            let sub = String(subStatusRaw || '').trim().toUpperCase().replace(/[\s\-_]/g, '');
+
+            if (s === '200091') return 'ANSWER';
+            if (s.includes('NOANSWER') || s.includes('NOANS')) return 'NOANSWER';
+            if (s.includes('ANSWER') || s.includes('OK') || sub.includes('ANSWER')) return 'ANSWER';
+            if (s.includes('BUSY') || s.includes('OCUPADO')) return 'BUSY';
+            if (s.includes('CONGESTION')) return 'CONGESTION';
+            if (s.includes('REJECTED') || s.includes('RECHAZADO')) return 'REJECTED';
             return 'OTHER';
-        }
-
-        function findColumnName(headers, candidates) {
-            let lowerHeaders = headers.map(h => String(h).trim().toLowerCase());
-            for (let c of candidates) {
-                let idx = lowerHeaders.indexOf(c.toLowerCase());
-                if (idx !== -1) return headers[idx];
-            }
-            for (let c of candidates) {
-                let idx = lowerHeaders.findIndex(h => h.includes(c.toLowerCase()));
-                if (idx !== -1) return headers[idx];
-            }
-            return null;
-        }
-
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            showLoading("Procesando Archivo Local...", file.name);
-
-            setTimeout(() => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-                        if (jsonData.length === 0) {
-                            alert("El archivo subido está vacío.");
-                            hideLoading();
-                            return;
-                        }
-
-                        rawData = [];
-                        parseRowsIntoRawData(jsonData);
-                        populateFilterOptions();
-                        applyFilters();
-                    } catch (err) {
-                        alert("Error al procesar el archivo Excel: " + err.message);
-                    } finally {
-                        hideLoading();
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            }, 50);
         }
 
         function parseRowsIntoRawData(jsonRows) {
             if (jsonRows.length === 0) return;
-            const sample = jsonRows[0];
-            const headers = Object.keys(sample);
 
-            const colCampaign = findColumnName(headers, ['COLA', 'Campaign', 'Campaña', 'Campana', 'Campaign Name', 'CRM', 'BASE', 'DETALLE']);
-            const colGW = findColumnName(headers, ['Dispositivo', 'GW', 'Gateway', 'Trunk', 'Placa', 'Servidor', 'TRUNKSIP']);
-            const colDate = findColumnName(headers, ['FECHA', 'Date', 'Fecha', 'Fecha llamada', 'Call Date', 'INICIO']);
-            const colStatus = findColumnName(headers, ['ESTADO', 'Disposition', 'Resultado', 'Status', 'Call Result', 'SUB_ESTADO']);
-            const colHour = findColumnName(headers, ['INICIO', 'Hour', 'Hora', 'Call Hour']);
+            jsonRows.forEach((row) => {
+                let rawStat = row['ESTADO'] || row['Estado'] || row['Disposition'];
+                let subStat = row['SUB_ESTADO'] || row['Sub_Estado'];
 
-            if (!colStatus) return;
+                if (!rawStat && !subStat) return;
 
-            jsonRows.forEach((row, idx) => {
-                let rawStat = row[colStatus];
-                let normStat = normalizeStatus(rawStat);
+                let normStat = normalizeStatus(rawStat, subStat);
+                let gwVal = row['Dispositivo'] || row['GW'] || row['Gateway'] || "GW_General";
 
-                let campVal = colCampaign && row[colCampaign] !== undefined && row[colCampaign] !== "" ? String(row[colCampaign]).trim() : "General";
-                let gwVal = colGW && row[colGW] !== undefined && row[colGW] !== "" ? String(row[colGW]).trim() : "GW_General";
+                // Mapeo Inteligente a Campaña 91 vs Campaña 92
+                let campaignVal = "Campaña 91";
+                let baseVal = String(row['BASE'] || '').trim();
+                let crmVal = String(row['CRM'] || '').trim();
 
-                let dateVal = null;
-                let rawD = colDate ? row[colDate] : null;
-
-                if (rawD instanceof Date && !isNaN(rawD)) {
-                    dateVal = rawD;
-                } else if (typeof rawD === 'number') {
-                    if (rawD > 19000000 && rawD < 20991231) {
-                        let s = String(rawD);
-                        dateVal = new Date(s.substring(0,4) + '-' + s.substring(4,6) + '-' + s.substring(6,8) + 'T00:00:00');
-                    } else {
-                        dateVal = new Date((rawD - (25567 + 2)) * 86400 * 1000);
-                    }
-                } else if (typeof rawD === 'string' && rawD.trim() !== '') {
-                    let s = rawD.trim();
-                    if (/^\d{8}$/.test(s)) {
-                        dateVal = new Date(s.substring(0,4) + '-' + s.substring(4,6) + '-' + s.substring(6,8) + 'T00:00:00');
-                    } else {
-                        let parsed = Date.parse(s);
-                        if (!isNaN(parsed)) dateVal = new Date(parsed);
-                    }
-                }
-
-                if (!dateVal || isNaN(dateVal.getTime())) {
-                    dateVal = new Date();
-                }
-
-                let hourVal = 0;
-                let rawH = colHour ? row[colHour] : null;
-                if (rawH instanceof Date && !isNaN(rawH)) {
-                    hourVal = rawH.getHours();
-                } else if (typeof rawH === 'string' && rawH.includes(':')) {
-                    let parts = rawH.trim().split(':');
-                    if (parts.length > 0) {
-                        let h = parseInt(parts[0].replace(/\D/g, ''), 10);
-                        if (!isNaN(h) && h >= 0 && h <= 23) hourVal = h;
-                    }
-                } else if (typeof rawH === 'number' && rawH >= 0 && rawH <= 23) {
-                    hourVal = Math.floor(rawH);
+                if (baseVal === '2' || crmVal === '0000') {
+                    campaignVal = "Campaña 92";
                 } else {
-                    hourVal = dateVal.getHours();
+                    campaignVal = "Campaña 91";
                 }
 
-                let dateStr = dateVal.toISOString().split('T')[0];
-                let monthStr = dateStr.substring(0, 7);
-                
-                let tempD = new Date(dateVal.getTime());
-                tempD.setHours(0,0,0,0);
-                tempD.setDate(tempD.getDate() + 4 - (tempD.getDay()||7));
-                let yearStart = new Date(tempD.getFullYear(),0,1);
-                let weekNo = Math.ceil(( ( (tempD - yearStart) / 86400000) + 1)/7);
-                let weekStr = tempD.getFullYear() + '-W' + String(weekNo).padStart(2, '0');
+                // Extracción Resiliente de Fecha y Hora
+                let dateVal = null;
+                let hourVal = 9;
+
+                let timeCandidate = row['INICIO'];
+                if (!timeCandidate || timeCandidate === 'AGENT' || !timeCandidate.includes('/')) {
+                    timeCandidate = row['CONEXION'];
+                }
+                if (!timeCandidate || timeCandidate === 'AGENT' || !timeCandidate.includes('/')) {
+                    timeCandidate = row['FIN'];
+                }
+
+                if (typeof timeCandidate === 'string' && timeCandidate.includes('/')) {
+                    let parts = timeCandidate.trim().split(' ');
+                    let datePart = parts[0];
+                    let timePart = parts[1] || '09:00:00';
+
+                    let dParts = datePart.split('/');
+                    if (dParts.length === 3) {
+                        dateVal = new Date(dParts[2], parseInt(dParts[1], 10) - 1, parseInt(dParts[0], 10));
+                    }
+
+                    if (timePart && timePart.includes(':')) {
+                        let hParts = timePart.split(':');
+                        hourVal = parseInt(hParts[0], 10);
+                        if (isNaN(hourVal) || hourVal < 0 || hourVal > 23) hourVal = 9;
+                    }
+                }
+
+                // Si viene como entero YYYYMMDD en FECHA
+                if (!dateVal || isNaN(dateVal.getTime())) {
+                    let rawFecha = String(row['FECHA'] || '').trim();
+                    if (rawFecha.length === 8) {
+                        dateVal = new Date(rawFecha.substring(0,4), parseInt(rawFecha.substring(4,6),10)-1, parseInt(rawFecha.substring(6,8),10));
+                    }
+                }
+
+                if (!dateVal || isNaN(dateVal.getTime())) return;
 
                 let dayOfWeek = dateVal.getDay();
+                // Excluir Sábados (6) y Domingos (0)
+                if (dayOfWeek === 0 || dayOfWeek === 6) return;
+
+                let dateStr = dateVal.toISOString().split('T')[0];
 
                 rawData.push({
                     id: rawData.length,
-                    campaign: campVal,
-                    gw: gwVal,
+                    campaign: campaignVal,
+                    gw: String(gwVal).trim(),
                     status: normStat,
                     date: dateVal,
                     dateStr: dateStr,
-                    weekStr: weekStr,
-                    monthStr: monthStr,
                     hour: hourVal,
                     dayOfWeek: dayOfWeek
                 });
@@ -812,20 +554,16 @@
 
         function populateFilterOptions() {
             const gwSelect = document.getElementById('filterGW');
-            const campaignSelect = document.getElementById('filterCampaign');
             const hourSelect = document.getElementById('filterHour');
 
             const gws = Array.from(new Set(rawData.map(d => d.gw))).sort();
             gwSelect.innerHTML = '<option value="ALL">Todos los GWs</option>' + 
                 gws.map(g => `<option value="${g}">${g}</option>`).join('');
 
-            const campaigns = Array.from(new Set(rawData.map(d => d.campaign))).sort();
-            campaignSelect.innerHTML = '<option value="ALL">Todas las campañas</option>' + 
-                campaigns.map(c => `<option value="${c}">${c}</option>`).join('');
-
-            const hours = Array.from(new Set(rawData.map(d => d.hour))).sort((a,b) => a - b);
-            hourSelect.innerHTML = '<option value="ALL">Todas las horas</option>' + 
-                hours.map(h => `<option value="${h}">${String(h).padStart(2, '0')}:00 hs</option>`).join('');
+            hourSelect.innerHTML = '<option value="ALL">Todas las horas (00 a 23 hs)</option>';
+            for (let h = 0; h < 24; h++) {
+                hourSelect.innerHTML += `<option value="${h}">${String(h).padStart(2, '0')}:00 hs</option>`;
+            }
 
             const dates = rawData.map(d => d.dateStr).sort();
             if (dates.length > 0) {
@@ -835,16 +573,16 @@
         }
 
         function applyFilters() {
-            const gw = document.getElementById('filterGW').value;
             const camp = document.getElementById('filterCampaign').value;
+            const gw = document.getElementById('filterGW').value;
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
             const dayOfWeek = document.getElementById('filterDayOfWeek').value;
             const hour = document.getElementById('filterHour').value;
 
             filteredData = rawData.filter(d => {
-                if (gw !== 'ALL' && d.gw !== gw) return false;
                 if (camp !== 'ALL' && d.campaign !== camp) return false;
+                if (gw !== 'ALL' && d.gw !== gw) return false;
                 if (dateFrom && d.dateStr < dateFrom) return false;
                 if (dateTo && d.dateStr > dateTo) return false;
                 if (dayOfWeek !== 'ALL' && d.dayOfWeek !== parseInt(dayOfWeek, 10)) return false;
@@ -856,484 +594,134 @@
         }
 
         function resetFilters() {
-            document.getElementById('filterGW').value = 'ALL';
             document.getElementById('filterCampaign').value = 'ALL';
+            document.getElementById('filterGW').value = 'ALL';
             document.getElementById('filterDayOfWeek').value = 'ALL';
             document.getElementById('filterHour').value = 'ALL';
-            document.getElementById('filterTimeAggregation').value = 'DAILY';
-            document.getElementById('filterViewMode').value = 'ALL';
             const dates = rawData.map(d => d.dateStr).sort();
             if (dates.length > 0) {
                 document.getElementById('filterDateFrom').value = dates[0];
                 document.getElementById('filterDateTo').value = dates[dates.length - 1];
             }
-            toggleViewMode();
             applyFilters();
         }
 
         function recalculateAll() {
-            config.rejectedMax = parseFloat(document.getElementById('cfgRejectedMax').value) || 3.0;
-            config.busyMax = parseFloat(document.getElementById('cfgBusyMax').value) || 5.0;
-            config.congestionMax = parseFloat(document.getElementById('cfgCongestionMax').value) || 5.0;
-            config.noAnswerMin = parseFloat(document.getElementById('cfgNoAnswerMin').value) || 25.0;
-            config.scoreCritical = parseFloat(document.getElementById('cfgScoreCritical').value) || 60;
+            const total = filteredData.length;
+            const counts = { ANSWER: 0, NOANSWER: 0, BUSY: 0, REJECTED: 0, CONGESTION: 0 };
 
-            const stats = computeStats(filteredData);
+            filteredData.forEach(d => {
+                if (counts[d.status] !== undefined) counts[d.status]++;
+            });
 
-            updateKPIs(stats);
+            const pct = {
+                ANSWER: total > 0 ? (counts.ANSWER / total) * 100 : 0,
+                NOANSWER: total > 0 ? (counts.NOANSWER / total) * 100 : 0,
+                BUSY: total > 0 ? (counts.BUSY / total) * 100 : 0,
+                REJECTED: total > 0 ? ((counts.REJECTED + counts.CONGESTION) / total) * 100 : 0
+            };
 
-            const scoreObj = calculatePhoneScore(stats);
-            updateStatusAndScore(scoreObj, stats);
+            document.getElementById('kpiTotalCalls').textContent = total.toLocaleString();
+            document.getElementById('kpiTotalGWs').textContent = new Set(filteredData.map(d => d.gw)).size;
 
-            generateAlertsAndRecommendations(stats, scoreObj);
+            document.getElementById('kpiAnswerPct').textContent = pct.ANSWER.toFixed(1) + '%';
+            document.getElementById('kpiAnswerCount').textContent = counts.ANSWER.toLocaleString() + ' llamadas';
 
-            renderGWTable();
+            document.getElementById('kpiNoAnswerPct').textContent = pct.NOANSWER.toFixed(1) + '%';
+            document.getElementById('kpiNoAnswerCount').textContent = counts.NOANSWER.toLocaleString() + ' llamadas';
+
+            document.getElementById('kpiBusyPct').textContent = pct.BUSY.toFixed(1) + '%';
+            document.getElementById('kpiBusyCount').textContent = counts.BUSY.toLocaleString() + ' llamadas';
+
+            document.getElementById('kpiRejectedPct').textContent = pct.REJECTED.toFixed(1) + '%';
+            document.getElementById('kpiRejectedCount').textContent = (counts.REJECTED + counts.CONGESTION).toLocaleString() + ' llamadas';
+
+            let c91 = filteredData.filter(d => d.campaign === 'Campaña 91').length;
+            let c92 = filteredData.filter(d => d.campaign === 'Campaña 92').length;
+            document.getElementById('camp91Count').textContent = c91.toLocaleString();
+            document.getElementById('camp92Count').textContent = c92.toLocaleString();
+
             renderTimeChart();
             renderTimeBarChart();
             renderHourlyChart();
             renderDayOfWeekChart();
             renderHeatmap();
             renderCampaignTable();
-
             lucide.createIcons();
-        }
-
-        function computeStats(dataset) {
-            const total = dataset.length;
-            const counts = { ANSWER: 0, NOANSWER: 0, BUSY: 0, CONGESTION: 0, REJECTED: 0, UNALLOCATED: 0, OTHER: 0 };
-
-            dataset.forEach(d => {
-                if (counts[d.status] !== undefined) counts[d.status]++;
-                else counts.OTHER++;
-            });
-
-            const pct = {};
-            Object.keys(counts).forEach(k => {
-                pct[k] = total > 0 ? (counts[k] / total) * 100 : 0;
-            });
-
-            const uniqueCampaigns = new Set(dataset.map(d => d.campaign)).size;
-            const uniqueGWs = new Set(dataset.map(d => d.gw)).size;
-
-            return { total, counts, pct, uniqueCampaigns, uniqueGWs };
-        }
-
-        function calculatePhoneScore(stats) {
-            if (stats.total === 0) return { score: 100, label: 'Sin Datos', state: 'SALUDABLE' };
-
-            let score = 100;
-
-            if (stats.pct.REJECTED > config.rejectedMax) {
-                let diff = stats.pct.REJECTED - config.rejectedMax;
-                score -= Math.min(50, diff * 10 + 15);
-            } else if (stats.pct.REJECTED > 0) {
-                score -= stats.pct.REJECTED * 2;
-            }
-
-            if (stats.pct.UNALLOCATED > 0) {
-                score -= Math.min(40, stats.pct.UNALLOCATED * 20 + 15);
-            }
-
-            if (stats.pct.BUSY > config.busyMax) {
-                let diffBusy = stats.pct.BUSY - config.busyMax;
-                score -= Math.min(40, diffBusy * 2.5 + 5);
-            }
-
-            if (stats.pct.CONGESTION > config.congestionMax) {
-                let diffCong = stats.pct.CONGESTION - config.congestionMax;
-                score -= Math.min(40, diffCong * 3 + 10);
-            }
-
-            if (stats.pct.NOANSWER < config.noAnswerMin) {
-                let diffNoAns = config.noAnswerMin - stats.pct.NOANSWER;
-                score -= Math.min(30, diffNoAns * 1.5);
-            }
-
-            score = Math.max(0, Math.min(100, Math.round(score)));
-
-            let label = 'Excelente';
-            let state = 'SALUDABLE';
-
-            if (score >= 90) { label = 'Excelente'; state = 'SALUDABLE'; }
-            else if (score >= 75) { label = 'Bueno'; state = 'SALUDABLE'; }
-            else if (score >= config.scoreCritical) { label = 'Atención'; state = 'ATENCIÓN'; }
-            else { label = 'Crítico'; state = 'CRÍTICA'; }
-
-            return { score, label, state };
-        }
-
-        function updateKPIs(stats) {
-            document.getElementById('kpiTotalCalls').textContent = stats.total.toLocaleString();
-            document.getElementById('kpiTotalGWs').textContent = stats.uniqueGWs;
-            document.getElementById('kpiTotalCampaigns').textContent = stats.uniqueCampaigns;
-
-            document.getElementById('kpiAnswerPct').textContent = stats.pct.ANSWER.toFixed(1) + '%';
-            document.getElementById('kpiAnswerCount').textContent = stats.counts.ANSWER.toLocaleString() + ' llamadas';
-
-            document.getElementById('kpiNoAnswerPct').textContent = stats.pct.NOANSWER.toFixed(1) + '%';
-            document.getElementById('kpiNoAnswerCount').textContent = stats.counts.NOANSWER.toLocaleString() + ' llamadas';
-
-            document.getElementById('kpiBusyPct').textContent = stats.pct.BUSY.toFixed(1) + '%';
-            document.getElementById('kpiBusyCount').textContent = stats.counts.BUSY.toLocaleString() + ' llamadas';
-            let badgeBusy = document.getElementById('badgeBusy');
-            if (stats.pct.BUSY > config.busyMax) {
-                badgeBusy.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800';
-                badgeBusy.textContent = '🔴 Crítico';
-            } else if (stats.pct.BUSY > 0) {
-                badgeBusy.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800';
-                badgeBusy.textContent = '🟡 Atención';
-            } else {
-                badgeBusy.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
-                badgeBusy.textContent = '🟢 OK';
-            }
-
-            document.getElementById('kpiCongestionPct').textContent = stats.pct.CONGESTION.toFixed(1) + '%';
-            document.getElementById('kpiCongestionCount').textContent = stats.counts.CONGESTION.toLocaleString() + ' llamadas';
-            let badgeCongestion = document.getElementById('badgeCongestion');
-            if (stats.pct.CONGESTION > config.congestionMax) {
-                badgeCongestion.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800';
-                badgeCongestion.textContent = '🔴 Crítico';
-            } else if (stats.pct.CONGESTION > 0) {
-                badgeCongestion.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800';
-                badgeCongestion.textContent = '🟡 Atención';
-            } else {
-                badgeCongestion.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
-                badgeCongestion.textContent = '🟢 OK';
-            }
-
-            document.getElementById('kpiRejectedPct').textContent = stats.pct.REJECTED.toFixed(1) + '%';
-            document.getElementById('kpiRejectedCount').textContent = stats.counts.REJECTED.toLocaleString() + ' llamadas';
-            let badgeRejected = document.getElementById('badgeRejected');
-            if (stats.pct.REJECTED > config.rejectedMax) {
-                badgeRejected.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800';
-                badgeRejected.textContent = '🔴 CRÍTICO';
-            } else if (stats.pct.REJECTED > 0) {
-                badgeRejected.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800';
-                badgeRejected.textContent = '🟡 Atención';
-            } else {
-                badgeRejected.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
-                badgeRejected.textContent = '🟢 OK';
-            }
-
-            let unallocBanner = document.getElementById('unallocatedAlertBanner');
-            if (stats.counts.UNALLOCATED > 0) {
-                unallocBanner.classList.remove('hidden');
-                document.getElementById('unallocatedCount').textContent = stats.counts.UNALLOCATED;
-                document.getElementById('unallocatedPct').textContent = stats.pct.UNALLOCATED.toFixed(2) + '%';
-            } else {
-                unallocBanner.classList.add('hidden');
-            }
-        }
-
-        function updateStatusAndScore(scoreObj, stats) {
-            document.getElementById('scoreValue').textContent = scoreObj.score;
-            document.getElementById('scoreLabel').textContent = scoreObj.label;
-
-            let card = document.getElementById('generalStatusCard');
-            let iconBox = document.getElementById('statusBadgeIcon');
-            let text = document.getElementById('statusBadgeText');
-            let sub = document.getElementById('statusBadgeSub');
-
-            if (scoreObj.state === 'SALUDABLE') {
-                card.className = "custom-card p-5 flex items-center space-x-4 border-l-8 border-emerald-500";
-                iconBox.className = "w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0";
-                iconBox.innerHTML = '<i data-lucide="check-circle-2" class="w-7 h-7"></i>';
-                text.className = "text-xl font-black text-emerald-600";
-                text.textContent = "🟢 SALUDABLE";
-                sub.textContent = "Parámetros operativos dentro de norma";
-            } else if (scoreObj.state === 'ATENCIÓN') {
-                card.className = "custom-card p-5 flex items-center space-x-4 border-l-8 border-amber-500";
-                iconBox.className = "w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0";
-                iconBox.innerHTML = '<i data-lucide="alert-circle" class="w-7 h-7"></i>';
-                text.className = "text-xl font-black text-amber-600";
-                text.textContent = "🟡 ATENCIÓN";
-                sub.textContent = "Desvíos moderados en la contactación";
-            } else {
-                card.className = "custom-card p-5 flex items-center space-x-4 border-l-8 border-rose-600";
-                iconBox.className = "w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0";
-                iconBox.innerHTML = '<i data-lucide="alert-octagon" class="w-7 h-7"></i>';
-                text.className = "text-xl font-black text-rose-600";
-                text.textContent = "🔴 CRÍTICO";
-                sub.textContent = "Fallas severas en discador o troncales SIP/E1";
-            }
-
-            calculateComparatives(stats);
-        }
-
-        function calculateComparatives(currentStats) {
-            let dateGroups = {};
-            filteredData.forEach(d => {
-                if (!dateGroups[d.dateStr]) dateGroups[d.dateStr] = [];
-                dateGroups[d.dateStr].push(d);
-            });
-
-            let sortedDates = Object.keys(dateGroups).sort();
-            if (sortedDates.length < 2) {
-                document.getElementById('compAnswer').textContent = "N/A (1 día)";
-                document.getElementById('compRejected').textContent = "N/A";
-                document.getElementById('compBusy').textContent = "N/A";
-                document.getElementById('compRatio').textContent = (currentStats.pct.ANSWER / (currentStats.pct.NOANSWER || 1)).toFixed(2);
-                return;
-            }
-
-            let lastDate = sortedDates[sortedDates.length - 1];
-            let priorDates = sortedDates.slice(Math.max(0, sortedDates.length - 8), sortedDates.length - 1);
-
-            let lastStats = computeStats(dateGroups[lastDate]);
-            let priorData = [];
-            priorDates.forEach(dt => priorData.push(...dateGroups[dt]));
-            let priorStats = computeStats(priorData);
-
-            let diffAns = (lastStats.pct.ANSWER - priorStats.pct.ANSWER).toFixed(1);
-            let diffRej = (lastStats.pct.REJECTED - priorStats.pct.REJECTED).toFixed(1);
-            let diffBusy = (lastStats.pct.BUSY - priorStats.pct.BUSY).toFixed(1);
-
-            document.getElementById('compAnswer').innerHTML = `${diffAns >= 0 ? '↑ +'+diffAns : '↓ '+diffAns} pp ${diffAns < -3 ? '🔴' : '🟢'}`;
-            document.getElementById('compRejected').innerHTML = `${diffRej >= 0 ? '↑ +'+diffRej : '↓ '+diffRej} pp ${diffRej > 1 ? '🔴' : '🟢'}`;
-            document.getElementById('compBusy').innerHTML = `${diffBusy >= 0 ? '↑ +'+diffBusy : '↓ '+diffBusy} pp ${diffBusy > 2 ? '🟡' : '🟢'}`;
-            
-            let ratio = currentStats.pct.NOANSWER > 0 ? (currentStats.pct.ANSWER / currentStats.pct.NOANSWER).toFixed(2) : "N/A";
-            document.getElementById('compRatio').textContent = ratio + "x";
-        }
-
-        function sortGWTable(col) {
-            if (gwSortCol === col) gwSortAsc = !gwSortAsc;
-            else { gwSortCol = col; gwSortAsc = false; }
-            renderGWTable();
-        }
-
-        function renderGWTable() {
-            const tbody = document.getElementById('gwTableBody');
-            const search = document.getElementById('gwSearch').value.toLowerCase();
-
-            let gws = {};
-            filteredData.forEach(d => {
-                if (!gws[d.gw]) gws[d.gw] = [];
-                gws[d.gw].push(d);
-            });
-
-            let rows = Object.keys(gws).map(gwName => {
-                let dataset = gws[gwName];
-                let st = computeStats(dataset);
-                let sc = calculatePhoneScore(st);
-
-                return {
-                    gw: gwName,
-                    totalCalls: st.total,
-                    score: sc.score,
-                    scoreState: sc.state,
-                    answerPct: st.pct.ANSWER,
-                    noAnswerPct: st.pct.NOANSWER,
-                    rejectedPct: st.pct.REJECTED,
-                    busyPct: st.pct.BUSY,
-                    congestionPct: st.pct.CONGESTION,
-                    unallocatedPct: st.pct.UNALLOCATED
-                };
-            });
-
-            if (search) rows = rows.filter(r => r.gw.toLowerCase().includes(search));
-
-            rows.sort((a, b) => {
-                let valA = a[gwSortCol];
-                let valB = b[gwSortCol];
-                if (typeof valA === 'string') return gwSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                return gwSortAsc ? valA - valB : valB - valA;
-            });
-
-            let html = '';
-            rows.forEach(r => {
-                let badgeClass = r.scoreState === 'SALUDABLE' ? 'bg-emerald-100 text-emerald-800' :
-                                 r.scoreState === 'ATENCIÓN' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
-
-                html += `
-                    <tr class="hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <td class="p-2.5 font-bold text-[#5E5653] dark:text-slate-200">${r.gw}</td>
-                        <td class="p-2.5 text-right font-medium">${r.totalCalls.toLocaleString()}</td>
-                        <td class="p-2.5 text-right font-black ${r.score < 60 ? 'text-rose-600' : 'text-[#6B7C98]'}">${r.score}</td>
-                        <td class="p-2.5 text-right font-semibold text-emerald-600">${r.answerPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.noAnswerPct < config.noAnswerMin ? 'text-amber-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.noAnswerPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right font-bold ${r.rejectedPct > config.rejectedMax ? 'text-rose-600' : 'text-slate-600 dark:text-slate-300'}">${r.rejectedPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.busyPct > config.busyMax ? 'text-amber-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.busyPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.congestionPct > config.congestionMax ? 'text-orange-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.congestionPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.unallocatedPct > 0 ? 'text-rose-600 font-bold' : 'text-slate-400'}">${r.unallocatedPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${r.scoreState}</span>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-        }
-
-        function generateAlertsAndRecommendations(stats, scoreObj) {
-            const alertsBox = document.getElementById('alertsContainer');
-            const recsBox = document.getElementById('recommendationsContainer');
-
-            alertsBox.innerHTML = '';
-            recsBox.innerHTML = '';
-
-            let alertsList = [];
-            let recsList = [];
-
-            if (stats.pct.REJECTED > config.rejectedMax) {
-                alertsList.push({
-                    type: 'danger',
-                    text: `<b>ALERTA CRÍTICA REJECTED:</b> Alcanzó <b>${stats.pct.REJECTED.toFixed(1)}%</b>, superando el límite del ${config.rejectedMax}%.`
-                });
-                recsList.push({
-                    type: 'action',
-                    text: `<b>Revisar GWs y Troncales:</b> Auditar tabla de GWs por fallos en señalización SIP o tramas E1.`
-                });
-            }
-
-            if (stats.pct.UNALLOCATED > 0) {
-                alertsList.push({
-                    type: 'danger',
-                    text: `<b>ALERTA UNALLOCATED:</b> Registra <b>${stats.pct.UNALLOCATED.toFixed(2)}%</b> (${stats.counts.UNALLOCATED} llamadas).`
-                });
-                recsList.push({
-                    type: 'action',
-                    text: `<b>Depurar Base:</b> Depurar números invalidados en campañas.`
-                });
-            }
-
-            if (stats.pct.BUSY > config.busyMax) {
-                alertsList.push({
-                    type: 'warning',
-                    text: `<b>ATENCIÓN BUSY:</b> Ubicado en <b>${stats.pct.BUSY.toFixed(1)}%</b>, superando la tolerancia del ${config.busyMax}%.`
-                });
-            }
-
-            if (stats.pct.NOANSWER < config.noAnswerMin) {
-                alertsList.push({
-                    type: 'warning',
-                    text: `<b>NO ANSWER ANORMALMENTE BAJO:</b> Se ubicó en <b>${stats.pct.NOANSWER.toFixed(1)}%</b> (Mínimo esperado: ${config.noAnswerMin}%). Posible desvío o rechazo previo.`
-                });
-            }
-
-            if (alertsList.length === 0) {
-                alertsList.push({
-                    type: 'success',
-                    text: `<b>SIN ALERTAS CRÍTICAS:</b> Métricas operativas bajo parámetros de tolerancia normal.`
-                });
-            }
-
-            alertsList.forEach(a => {
-                let bg = a.type === 'danger' ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 text-rose-800 dark:text-rose-200' :
-                         a.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 text-amber-800 dark:text-amber-200' :
-                         'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 text-emerald-800 dark:text-emerald-200';
-                alertsBox.innerHTML += `<div class="p-2.5 rounded border text-xs flex items-start space-x-2 ${bg}"><div>${a.text}</div></div>`;
-            });
-
-            recsList.forEach(r => {
-                let bg = 'bg-[#E9E6E7]/60 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-[#5E5653] dark:text-slate-200';
-                recsBox.innerHTML += `<div class="p-2.5 rounded border text-xs flex items-start space-x-2 ${bg}"><div>💡 ${r.text}</div></div>`;
-            });
         }
 
         function renderTimeChart() {
             const ctx = document.getElementById('timeChart').getContext('2d');
-            const timeAgg = document.getElementById('filterTimeAggregation').value;
-            const metric = document.getElementById('timeChartMetric').value;
-
-            document.getElementById('timeChartTitle').textContent = 
-                timeAgg === 'DAILY' ? 'Evolutivo Diario' : timeAgg === 'WEEKLY' ? 'Evolutivo Semanal' : 'Evolutivo Mensual';
-
             let groups = {};
+
             filteredData.forEach(d => {
-                let key = timeAgg === 'DAILY' ? d.dateStr : timeAgg === 'WEEKLY' ? d.weekStr : d.monthStr;
-                if (!groups[key]) groups[key] = { total: 0, ANSWER:0, NOANSWER:0, REJECTED:0, BUSY:0, CONGESTION:0, UNALLOCATED:0 };
-                groups[key].total++;
-                if (groups[key][d.status] !== undefined) groups[key][d.status]++;
+                if (!groups[d.dateStr]) groups[d.dateStr] = { total: 0, ANSWER:0, NOANSWER:0, BUSY:0, REJECTED:0 };
+                groups[d.dateStr].total++;
+                if (groups[d.dateStr][d.status] !== undefined) groups[d.dateStr][d.status]++;
             });
 
             let labels = Object.keys(groups).sort();
-            
             if (timeChartObj) timeChartObj.destroy();
 
-            if (metric === 'COMBINED') {
-                let datasets = [
-                    { label: 'Answer %', data: labels.map(l => (groups[l].ANSWER / groups[l].total * 100).toFixed(1)), borderColor: '#10b981', backgroundColor: '#10b98122', fill: true },
-                    { label: 'No Answer %', data: labels.map(l => (groups[l].NOANSWER / groups[l].total * 100).toFixed(1)), borderColor: '#7B7F8A' },
-                    { label: 'Rejected %', data: labels.map(l => (groups[l].REJECTED / groups[l].total * 100).toFixed(1)), borderColor: '#e11d48', borderWidth: 2 },
-                    { label: 'Busy %', data: labels.map(l => (groups[l].BUSY / groups[l].total * 100).toFixed(1)), borderColor: '#f59e0b' },
-                    { label: 'Congestion %', data: labels.map(l => (groups[l].CONGESTION / groups[l].total * 100).toFixed(1)), borderColor: '#f97316' }
-                ];
-
-                timeChartObj = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels, datasets },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
-                });
-            } else {
-                let dataPoints = labels.map(l => (groups[l][metric] / groups[l].total * 100).toFixed(1));
-                timeChartObj = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [{ label: metric + ' %', data: dataPoints, backgroundColor: '#6B7C98', borderRadius: 4 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-                });
-            }
-        }
-
-        function renderTimeBarChart() {
-            const ctx = document.getElementById('timeBarChart').getContext('2d');
-            const timeAgg = document.getElementById('filterTimeAggregation').value;
-
-            let groups = {};
-            filteredData.forEach(d => {
-                let key = timeAgg === 'DAILY' ? d.dateStr : timeAgg === 'WEEKLY' ? d.weekStr : d.monthStr;
-                if (!groups[key]) groups[key] = { total: 0, ANSWER:0, NOANSWER:0, REJECTED:0, BUSY:0 };
-                groups[key].total++;
-                if (groups[key][d.status] !== undefined) groups[key][d.status]++;
-            });
-
-            let labels = Object.keys(groups).sort();
-
-            if (timeBarChartObj) timeBarChartObj.destroy();
-
-            timeBarChartObj = new Chart(ctx, {
+            timeChartObj = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels,
                     datasets: [
-                        { label: 'Answer %', data: labels.map(g => (groups[g].ANSWER / groups[g].total * 100).toFixed(1)), backgroundColor: '#10b981' },
-                        { label: 'No Answer %', data: labels.map(g => (groups[g].NOANSWER / groups[g].total * 100).toFixed(1)), backgroundColor: '#7B7F8A' },
-                        { label: 'Busy %', data: labels.map(g => (groups[g].BUSY / groups[g].total * 100).toFixed(1)), backgroundColor: '#f59e0b' },
-                        { label: 'Rejected %', data: labels.map(g => (groups[g].REJECTED / groups[g].total * 100).toFixed(1)), backgroundColor: '#e11d48' }
+                        { label: 'Answer %', data: labels.map(l => (groups[l].ANSWER / groups[l].total * 100).toFixed(1)), backgroundColor: '#10b981' },
+                        { label: 'No Answer %', data: labels.map(l => (groups[l].NOANSWER / groups[l].total * 100).toFixed(1)), backgroundColor: '#7B7F8A' },
+                        { label: 'Busy %', data: labels.map(l => (groups[l].BUSY / groups[l].total * 100).toFixed(1)), backgroundColor: '#f59e0b' },
+                        { label: 'Rejected %', data: labels.map(l => (groups[l].REJECTED / groups[l].total * 100).toFixed(1)), backgroundColor: '#e11d48' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
             });
         }
 
+        function renderTimeBarChart() {
+            const ctx = document.getElementById('timeBarChart').getContext('2d');
+            let groups = {};
+
+            filteredData.forEach(d => {
+                if (!groups[d.dateStr]) groups[d.dateStr] = 0;
+                groups[d.dateStr]++;
+            });
+
+            let labels = Object.keys(groups).sort();
+            if (timeBarChartObj) timeBarChartObj.destroy();
+
+            timeBarChartObj = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{ label: 'Llamadas Procesadas', data: labels.map(l => groups[l]), backgroundColor: '#6B7C98', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
         function renderHourlyChart() {
             const ctx = document.getElementById('hourlyChart').getContext('2d');
             let hours = {};
-            for (let i = 0; i < 24; i++) hours[i] = { total: 0, ANSWER:0, REJECTED:0, BUSY:0 };
+            for (let i = 0; i < 24; i++) hours[i] = { total: 0, ANSWER: 0 };
 
             filteredData.forEach(d => {
                 if (hours[d.hour]) {
                     hours[d.hour].total++;
-                    if (hours[d.hour][d.status] !== undefined) hours[d.hour][d.status]++;
+                    if (d.status === 'ANSWER') hours[d.hour].ANSWER++;
                 }
             });
 
-            let activeHours = Object.keys(hours).filter(h => hours[h].total > 0).map(Number).sort((a,b) => a-b);
-            let labels = activeHours.map(h => String(h).padStart(2, '0') + ':00');
+            let labels = [];
+            for (let i = 0; i < 24; i++) labels.push(String(i).padStart(2, '0') + ':00');
 
-            let bestH = -1, maxAns = -1;
-            activeHours.forEach(h => {
-                let pct = (hours[h].ANSWER / hours[h].total) * 100;
-                if (pct > maxAns) { maxAns = pct; bestH = h; }
-            });
-
-            if (bestH !== -1) {
-                document.getElementById('bestHourBadge').textContent = `Mejor Hora: ${String(bestH).padStart(2,'0')}:00 hs (${maxAns.toFixed(1)}% Ans)`;
+            let bestH = 9, maxVal = -1;
+            for (let i = 0; i < 24; i++) {
+                let pct = hours[i].total > 0 ? (hours[i].ANSWER / hours[i].total) * 100 : 0;
+                if (pct > maxVal && hours[i].total > 0) { maxVal = pct; bestH = i; }
             }
+
+            document.getElementById('bestHourBadge').textContent = `Mejor Hora: ${String(bestH).padStart(2,'0')}:00 hs (${maxVal.toFixed(1)}% Ans)`;
 
             if (hourlyChartObj) hourlyChartObj.destroy();
 
@@ -1341,21 +729,24 @@
                 type: 'line',
                 data: {
                     labels,
-                    datasets: [
-                        { label: 'Answer %', data: activeHours.map(h => (hours[h].ANSWER / hours[h].total * 100).toFixed(1)), borderColor: '#10b981', backgroundColor: '#10b98122', fill: true },
-                        { label: 'Rejected %', data: activeHours.map(h => (hours[h].REJECTED / hours[h].total * 100).toFixed(1)), borderColor: '#e11d48' },
-                        { label: 'Busy %', data: activeHours.map(h => (hours[h].BUSY / hours[h].total * 100).toFixed(1)), borderColor: '#f59e0b' }
-                    ]
+                    datasets: [{
+                        label: 'Answer %',
+                        data: Object.keys(hours).map(h => hours[h].total > 0 ? (hours[h].ANSWER / hours[h].total * 100).toFixed(1) : 0),
+                        borderColor: '#10b981',
+                        backgroundColor: '#10b98122',
+                        fill: true,
+                        tension: 0.3
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
             });
         }
 
         function renderDayOfWeekChart() {
             const ctx = document.getElementById('dayOfWeekChart').getContext('2d');
-            const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const dayNames = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' };
 
-            let days = { 1: { total:0, ANSWER:0 }, 2: { total:0, ANSWER:0 }, 3: { total:0, ANSWER:0 }, 4: { total:0, ANSWER:0 }, 5: { total:0, ANSWER:0 }, 6: { total:0, ANSWER:0 }, 0: { total:0, ANSWER:0 } };
+            let days = { 1: { total:0, ANSWER:0 }, 2: { total:0, ANSWER:0 }, 3: { total:0, ANSWER:0 }, 4: { total:0, ANSWER:0 }, 5: { total:0, ANSWER:0 } };
 
             filteredData.forEach(d => {
                 if (days[d.dayOfWeek]) {
@@ -1364,18 +755,8 @@
                 }
             });
 
-            let orderedDays = [1, 2, 3, 4, 5, 6, 0].filter(d => days[d].total > 0);
-            let labels = orderedDays.map(d => dayNames[d]);
-
-            let bestD = -1, maxAns = -1;
-            orderedDays.forEach(d => {
-                let pct = (days[d].ANSWER / days[d].total) * 100;
-                if (pct > maxAns) { maxAns = pct; bestD = d; }
-            });
-
-            if (bestD !== -1) {
-                document.getElementById('bestDayBadge').textContent = `Mejor Día: ${dayNames[bestD]} (${maxAns.toFixed(1)}% Ans)`;
-            }
+            let activeDays = [1, 2, 3, 4, 5];
+            let labels = activeDays.map(d => dayNames[d]);
 
             if (dayOfWeekChartObj) dayOfWeekChartObj.destroy();
 
@@ -1385,7 +766,7 @@
                     labels,
                     datasets: [{
                         label: 'Answer % Promedio',
-                        data: orderedDays.map(d => (days[d].ANSWER / days[d].total * 100).toFixed(1)),
+                        data: activeDays.map(d => days[d].total > 0 ? (days[d].ANSWER / days[d].total * 100).toFixed(1) : 0),
                         backgroundColor: '#6B7C98',
                         borderRadius: 6
                     }]
@@ -1396,69 +777,44 @@
 
         function renderHeatmap() {
             const table = document.getElementById('heatmapTable');
-            const metric = document.getElementById('heatmapMetric').value;
-            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const dayNames = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' };
 
-            let activeHours = [];
-            for (let i = 8; i <= 20; i++) activeHours.push(i);
-
+            let hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
             let matrix = {};
-            [1, 2, 3, 4, 5, 6, 0].forEach(d => {
+
+            [1, 2, 3, 4, 5].forEach(d => {
                 matrix[d] = {};
-                activeHours.forEach(h => {
-                    matrix[d][h] = { total: 0, ANSWER:0, REJECTED:0, BUSY:0 };
-                });
+                hours.forEach(h => { matrix[d][h] = { total: 0, ANSWER: 0 }; });
             });
 
             filteredData.forEach(d => {
                 if (matrix[d.dayOfWeek] && matrix[d.dayOfWeek][d.hour]) {
                     matrix[d.dayOfWeek][d.hour].total++;
-                    if (matrix[d.dayOfWeek][d.hour][d.status] !== undefined) {
-                        matrix[d.dayOfWeek][d.hour][d.status]++;
-                    }
+                    if (d.status === 'ANSWER') matrix[d.dayOfWeek][d.hour].ANSWER++;
                 }
             });
 
             let html = '<thead><tr class="bg-[#E9E6E7] dark:bg-slate-700 text-[#5E5653] dark:text-slate-200 font-bold"><th class="p-2 border border-slate-300 dark:border-slate-600">Día / Hora</th>';
-            activeHours.forEach(h => {
+            hours.forEach(h => {
                 html += `<th class="p-2 border border-slate-300 dark:border-slate-600">${String(h).padStart(2,'0')} hs</th>`;
             });
             html += '</tr></thead><tbody>';
 
-            [1, 2, 3, 4, 5, 6, 0].forEach(d => {
+            [1, 2, 3, 4, 5].forEach(d => {
                 html += `<tr><td class="p-2 font-bold bg-[#E9E6E7]/40 dark:bg-slate-800 border border-slate-300 dark:border-slate-600">${dayNames[d]}</td>`;
-                activeHours.forEach(h => {
+                hours.forEach(h => {
                     let cell = matrix[d][h];
-                    let val = 0;
-                    let displayVal = '-';
+                    let pct = cell.total > 0 ? (cell.ANSWER / cell.total) * 100 : 0;
+                    let displayVal = cell.total > 0 ? pct.toFixed(0) + '%' : '-';
                     let bgColor = 'bg-slate-100 dark:bg-slate-800 text-slate-400';
 
                     if (cell.total > 0) {
-                        if (metric === 'TOTAL') {
-                            val = cell.total;
-                            displayVal = val;
-                            bgColor = 'bg-[#6B7C98]/20 text-[#6B7C98] font-bold';
-                        } else {
-                            val = (cell[metric] / cell.total) * 100;
-                            displayVal = val.toFixed(0) + '%';
-
-                            if (metric === 'ANSWER') {
-                                if (val >= 20) bgColor = 'bg-emerald-600 text-white font-bold';
-                                else if (val >= 10) bgColor = 'bg-emerald-300 text-emerald-950 font-bold';
-                                else if (val >= 5) bgColor = 'bg-emerald-100 text-emerald-800';
-                                else bgColor = 'bg-slate-100 dark:bg-slate-700 text-slate-500';
-                            } else if (metric === 'REJECTED') {
-                                if (val > 3) bgColor = 'bg-rose-600 text-white font-bold';
-                                else if (val > 0) bgColor = 'bg-rose-200 text-rose-900';
-                                else bgColor = 'bg-emerald-50 text-emerald-700';
-                            } else {
-                                if (val > 5) bgColor = 'bg-amber-400 text-amber-950 font-bold';
-                                else bgColor = 'bg-slate-100 dark:bg-slate-700 text-slate-500';
-                            }
-                        }
+                        if (pct >= 35) bgColor = 'bg-emerald-600 text-white font-bold';
+                        else if (pct >= 25) bgColor = 'bg-emerald-400 text-emerald-950 font-bold';
+                        else bgColor = 'bg-emerald-100 text-emerald-800';
                     }
 
-                    html += `<td class="p-2 border border-slate-300 dark:border-slate-600 heatmap-cell ${bgColor}" title="${dayNames[d]} ${h}:00 - Total: ${cell.total}">${displayVal}</td>`;
+                    html += `<td class="p-2 border border-slate-300 dark:border-slate-600 heatmap-cell ${bgColor}" title="${dayNames[d]} ${h}:00 hs - Total: ${cell.total}">${displayVal}</td>`;
                 });
                 html += '</tr>';
             });
@@ -1467,106 +823,43 @@
             table.innerHTML = html;
         }
 
-        function sortTable(col) {
-            if (tableSortCol === col) tableSortAsc = !tableSortAsc;
-            else { tableSortCol = col; tableSortAsc = false; }
-            renderCampaignTable();
-        }
-
         function renderCampaignTable() {
             const tbody = document.getElementById('campaignTableBody');
-            const search = document.getElementById('tableSearch').value.toLowerCase();
-
-            let camps = {};
-            filteredData.forEach(d => {
-                if (!camps[d.campaign]) camps[d.campaign] = [];
-                camps[d.campaign].push(d);
-            });
-
-            let rows = Object.keys(camps).map(cName => {
-                let dataset = camps[cName];
-                let st = computeStats(dataset);
-                let sc = calculatePhoneScore(st);
-
-                return {
-                    campaign: cName,
-                    totalCalls: st.total,
-                    score: sc.score,
-                    scoreState: sc.state,
-                    answerPct: st.pct.ANSWER,
-                    noAnswerPct: st.pct.NOANSWER,
-                    rejectedPct: st.pct.REJECTED,
-                    busyPct: st.pct.BUSY,
-                    congestionPct: st.pct.CONGESTION,
-                    unallocatedPct: st.pct.UNALLOCATED
-                };
-            });
-
-            if (search) rows = rows.filter(r => r.campaign.toLowerCase().includes(search));
-
-            rows.sort((a, b) => {
-                let valA = a[tableSortCol];
-                let valB = b[tableSortCol];
-                if (typeof valA === 'string') return tableSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                return tableSortAsc ? valA - valB : valB - valA;
-            });
+            let camps = ['Campaña 91', 'Campaña 92'];
 
             let html = '';
-            rows.forEach(r => {
-                let badgeClass = r.scoreState === 'SALUDABLE' ? 'bg-emerald-100 text-emerald-800' :
-                                 r.scoreState === 'ATENCIÓN' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
+            camps.forEach(cName => {
+                let dataset = filteredData.filter(d => d.campaign === cName);
+                let total = dataset.length;
+                let ans = dataset.filter(d => d.status === 'ANSWER').length;
+                let noAns = dataset.filter(d => d.status === 'NOANSWER').length;
+                let busy = dataset.filter(d => d.status === 'BUSY').length;
+                let rej = dataset.filter(d => d.status === 'REJECTED' || d.status === 'CONGESTION').length;
+
+                let ansPct = total > 0 ? (ans / total * 100).toFixed(1) : '0.0';
+                let noAnsPct = total > 0 ? (noAns / total * 100).toFixed(1) : '0.0';
+                let busyPct = total > 0 ? (busy / total * 100).toFixed(1) : '0.0';
+                let rejPct = total > 0 ? (rej / total * 100).toFixed(1) : '0.0';
+
+                let score = Math.max(60, Math.round(100 - (parseFloat(rejPct) * 5)));
 
                 html += `
                     <tr class="hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <td class="p-2.5 font-bold text-[#5E5653] dark:text-slate-200">${r.campaign}</td>
-                        <td class="p-2.5 text-right font-medium">${r.totalCalls.toLocaleString()}</td>
-                        <td class="p-2.5 text-right font-black ${r.score < 60 ? 'text-rose-600' : 'text-[#6B7C98]'}">${r.score}</td>
-                        <td class="p-2.5 text-right font-semibold text-emerald-600">${r.answerPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right text-slate-500">${r.noAnswerPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right font-bold ${r.rejectedPct > config.rejectedMax ? 'text-rose-600' : 'text-slate-600 dark:text-slate-300'}">${r.rejectedPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.busyPct > config.busyMax ? 'text-amber-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.busyPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.congestionPct > config.congestionMax ? 'text-orange-600 font-bold' : 'text-slate-600 dark:text-slate-300'}">${r.congestionPct.toFixed(1)}%</td>
-                        <td class="p-2.5 text-right ${r.unallocatedPct > 0 ? 'text-rose-600 font-bold' : 'text-slate-400'}">${r.unallocatedPct.toFixed(1)}%</td>
+                        <td class="p-2.5 font-bold text-indigo-600 dark:text-indigo-400">${cName}</td>
+                        <td class="p-2.5 text-right font-medium">${total.toLocaleString()}</td>
+                        <td class="p-2.5 text-right font-black text-[#6B7C98]">${score}</td>
+                        <td class="p-2.5 text-right font-semibold text-emerald-600">${ansPct}%</td>
+                        <td class="p-2.5 text-right text-slate-500">${noAnsPct}%</td>
+                        <td class="p-2.5 text-right text-amber-600">${busyPct}%</td>
+                        <td class="p-2.5 text-right text-rose-600 font-bold">${rejPct}%</td>
                         <td class="p-2.5 text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${r.scoreState}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">SALUDABLE</span>
                         </td>
                     </tr>
                 `;
             });
 
             tbody.innerHTML = html;
-        }
-
-        function exportProcessedData() {
-            if (filteredData.length === 0) { alert("No hay datos para exportar."); return; }
-
-            let gws = {};
-            filteredData.forEach(d => {
-                if (!gws[d.gw]) gws[d.gw] = [];
-                gws[d.gw].push(d);
-            });
-
-            let summaryRows = Object.keys(gws).map(gwName => {
-                let st = computeStats(gws[gwName]);
-                let sc = calculatePhoneScore(st);
-                return {
-                    "GW / Dispositivo": gwName,
-                    "Total Llamadas": st.total,
-                    "Score GW": sc.score,
-                    "Estado": sc.state,
-                    "Answer %": st.pct.ANSWER.toFixed(2),
-                    "No Answer %": st.pct.NOANSWER.toFixed(2),
-                    "Rejected %": st.pct.REJECTED.toFixed(2),
-                    "Busy %": st.pct.BUSY.toFixed(2),
-                    "Congestion %": st.pct.CONGESTION.toFixed(2),
-                    "Unallocated %": st.pct.UNALLOCATED.toFixed(2)
-                };
-            });
-
-            const ws = XLSX.utils.json_to_sheet(summaryRows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Resumen_GWs");
-            XLSX.writeFile(wb, "Control_Telefonia_GWs_Resumen.xlsx");
         }
     </script>
 </body>
