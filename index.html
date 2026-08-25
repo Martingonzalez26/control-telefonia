@@ -367,7 +367,7 @@
     </main>
 
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Control de Telefonía v6.4 • Escaneo Automático Dinámico</p>
+        <p>Control de Telefonía v6.6 • Conexión CDN LFS Integrada</p>
     </footer>
 
     <script>
@@ -382,88 +382,90 @@
         const REPO_NAME = "control-telefonia";
         const FOLDER_PATH = "datos";
 
+        const STATIC_30 = [
+            "Detalle_de_transferencias_por_campaña_24082026_140422479_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_24082026_140524951_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093301870_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093313280_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_09331599_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093322190_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_09332718_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_09334227_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093405127_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093419380_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093434633_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093505812_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093522363_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093556779_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093624525_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_093643420_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_094807887_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_094822625_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_094859305_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_094940800_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095053389_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095147558_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095210960_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095233623_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095252564_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095313226_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095358946_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095423436_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095446676_optimizado.csv",
+            "Detalle_de_transferencias_por_campaña_25082026_095512510_optimizado.csv"
+        ];
+
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
             loadFolderData();
         });
 
+        async function fetchCsvText(fileName) {
+            // Intentar primero desde raw.githubusercontent.com (resuelve LFS automáticamente)
+            let rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER_PATH}/${fileName}`;
+            try {
+                let res = await fetch(rawUrl);
+                if (res.ok) {
+                    let text = await res.text();
+                    if (!text.startsWith("version https://git-lfs.github.com")) {
+                        return text;
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallo raw CDN:", fileName, e);
+            }
+
+            // Fallback a ruta relativa local
+            try {
+                let localRes = await fetch(`datos/${fileName}`);
+                if (localRes.ok) return await localRes.text();
+            } catch (e) {
+                console.warn("Fallo local fetch:", fileName, e);
+            }
+
+            return null;
+        }
+
         async function loadFolderData() {
-            showLoading("Escaneando carpeta 'datos'...", "Descargando lista completa de reportes...");
+            showLoading("Escaneando carpeta 'datos'...", "Cargando reportes completos...");
             rawData = [];
 
             try {
-                let fileUrls = [];
-
-                // 1. Intentar obtener la lista viva de GitHub API
-                try {
-                    let apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_PATH}?t=${Date.now()}`;
-                    let res = await fetch(apiUrl);
-                    if (res.ok) {
-                        let items = await res.json();
-                        fileUrls = items
-                            .filter(i => i.type === 'file' && i.name.endsWith('.csv'))
-                            .map(i => ({ name: i.name, url: i.download_url }));
-                    }
-                } catch (e) {
-                    console.warn("API GitHub no disponible, fallback a listado estático:", e);
-                }
-
-                // 2. Si la API de GitHub falló o rebasó cuotas, usar listado estático completo de los 30 archivos
-                if (fileUrls.length === 0) {
-                    const STATIC_30 = [
-                        "Detalle_de_transferencias_por_campaña_24082026_140422479_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_24082026_140524951_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093301870_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093313280_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_09331599_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093322190_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_09332718_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_09334227_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093405127_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093419380_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093434633_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093505812_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093522363_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093556779_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093624525_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_093643420_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_094807887_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_094822625_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_094859305_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_094940800_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095053389_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095147558_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095210960_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095233623_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095252564_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095313226_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095358946_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095423436_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095446676_optimizado.csv",
-                        "Detalle_de_transferencias_por_campaña_25082026_095512510_optimizado.csv"
-                    ];
-                    fileUrls = STATIC_30.map(f => ({ name: f, url: `datos/${f}` }));
-                }
-
-                document.getElementById('filesLoadedCount').textContent = fileUrls.length;
+                document.getElementById('filesLoadedCount').textContent = STATIC_30.length;
                 let loadedCount = 0;
 
-                for (let fileObj of fileUrls) {
-                    showLoading(`Procesando (${loadedCount + 1}/${fileUrls.length})...`, fileObj.name);
-                    try {
-                        let fileRes = await fetch(fileObj.url);
-                        if (fileRes.ok) {
-                            let csvText = await fileRes.text();
-                            Papa.parse(csvText, {
-                                header: true,
-                                skipEmptyLines: true,
-                                complete: function(results) {
-                                    parseRowsIntoRawData(results.data);
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.warn("No se pudo leer archivo:", fileObj.name, e);
+                for (let fileName of STATIC_30) {
+                    showLoading(`Procesando (${loadedCount + 1}/${STATIC_30.length})...`, fileName);
+                    let csvText = await fetchCsvText(fileName);
+
+                    if (csvText) {
+                        Papa.parse(csvText, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: function(results) {
+                                parseRowsIntoRawData(results.data);
+                            }
+                        });
                     }
                     loadedCount++;
                 }
@@ -475,7 +477,7 @@
                 document.getElementById('lastSyncTime').textContent = `Actualizado: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
             } catch (err) {
-                console.warn("Error general al cargar carpeta:", err);
+                console.warn("Error general al procesar carpeta:", err);
             } finally {
                 hideLoading();
             }
@@ -513,7 +515,7 @@
         }
 
         function parseRowsIntoRawData(jsonRows) {
-            if (jsonRows.length === 0) return;
+            if (!jsonRows || jsonRows.length === 0) return;
 
             jsonRows.forEach((row) => {
                 let rawStat = row['ESTADO'] || row['Estado'] || row['Disposition'];
