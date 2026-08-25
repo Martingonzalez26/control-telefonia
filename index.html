@@ -367,7 +367,7 @@
     </main>
 
     <footer class="bg-[#5E5653] text-[#E9E6E7] text-xs py-3.5 text-center border-t border-slate-700 mt-auto">
-        <p>Control de Telefonía v6.1 • Soporte Integrado Campañas 91 & 92</p>
+        <p>Control de Telefonía v6.2 • Parche de Zona Horaria & Días Hábiles</p>
     </footer>
 
     <script>
@@ -495,7 +495,7 @@
                     campaignVal = "Campaña 91";
                 }
 
-                // Extracción de Fecha y Hora
+                // Extracción Resiliente de Fecha y Hora en Hora Local Pura
                 let dateVal = null;
                 let hourVal = 9;
 
@@ -514,7 +514,8 @@
 
                     let dParts = datePart.split('/');
                     if (dParts.length === 3) {
-                        dateVal = new Date(dParts[2], parseInt(dParts[1], 10) - 1, parseInt(dParts[0], 10));
+                        // Forzar las 12:00 hs para evitar saltos de día por zona horaria
+                        dateVal = new Date(parseInt(dParts[2], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[0], 10), 12, 0, 0);
                     }
 
                     if (timePart && timePart.includes(':')) {
@@ -527,7 +528,7 @@
                 if (!dateVal || isNaN(dateVal.getTime())) {
                     let rawFecha = String(row['FECHA'] || '').trim();
                     if (rawFecha.length === 8) {
-                        dateVal = new Date(rawFecha.substring(0,4), parseInt(rawFecha.substring(4,6),10)-1, parseInt(rawFecha.substring(6,8),10));
+                        dateVal = new Date(parseInt(rawFecha.substring(0,4),10), parseInt(rawFecha.substring(4,6),10)-1, parseInt(rawFecha.substring(6,8),10), 12, 0, 0);
                     }
                 }
 
@@ -536,7 +537,10 @@
                 let dayOfWeek = dateVal.getDay();
                 if (dayOfWeek === 0 || dayOfWeek === 6) return; // Excluir Sábados y Domingos
 
-                let dateStr = dateVal.toISOString().split('T')[0];
+                let yyyy = dateVal.getFullYear();
+                let mm = String(dateVal.getMonth() + 1).padStart(2, '0');
+                let dd = String(dateVal.getDate()).padStart(2, '0');
+                let dateStr = `${yyyy}-${mm}-${dd}`;
 
                 rawData.push({
                     id: rawData.length,
@@ -564,7 +568,7 @@
                 hourSelect.innerHTML += `<option value="${h}">${String(h).padStart(2, '0')}:00 hs</option>`;
             }
 
-            const dates = rawData.map(d => d.dateStr).sort();
+            const dates = Array.from(new Set(rawData.map(d => d.dateStr))).sort();
             if (dates.length > 0) {
                 document.getElementById('filterDateFrom').value = dates[0];
                 document.getElementById('filterDateTo').value = dates[dates.length - 1];
@@ -597,7 +601,7 @@
             document.getElementById('filterGW').value = 'ALL';
             document.getElementById('filterDayOfWeek').value = 'ALL';
             document.getElementById('filterHour').value = 'ALL';
-            const dates = rawData.map(d => d.dateStr).sort();
+            const dates = Array.from(new Set(rawData.map(d => d.dateStr))).sort();
             if (dates.length > 0) {
                 document.getElementById('filterDateFrom').value = dates[0];
                 document.getElementById('filterDateTo').value = dates[dates.length - 1];
